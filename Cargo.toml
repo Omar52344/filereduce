@@ -2,7 +2,11 @@
 name = "filereduce"
 version = "0.1.0"
 edition = "2021"
+description = "procesador de archivos de gran peso EDIFACT,XML,JSON para generar archivos jsonl y otros formatos, optimizado para grandes volúmenes de datos"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/Omar52344/filereduce.git"
+keywords = ["edifact", "xml", "json", "jsonl"]
+categories = ["development-tools", "file-processing", "data-processing"]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
