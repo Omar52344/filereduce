@@ -1,3 +1,4 @@
+use crate::query::aggregation::execute_aggregates;
 use crate::query::ast::{Expr, Query, SortOrder};
 use crate::reader::reader::Reader;
 use crate::row::Row;
@@ -79,6 +80,17 @@ impl<R: Reader> Executor<R> {
         }
 
         results
+    }
+
+    pub fn collect_with_aggregates(mut self) -> crate::query::aggregation::AggregateResult {
+        let mut results = Vec::new();
+        while let Some(row) = self.next() {
+            results.push(row);
+        }
+
+        let agg_result = execute_aggregates(&results, &self.query.aggregates);
+
+        agg_result
     }
 }
 

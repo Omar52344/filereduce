@@ -18,6 +18,7 @@ fn test_limit_functionality() {
         filter: None,
         limit: Some(5),
         order_by: None,
+        aggregates: vec![],
     };
 
     let reader = MockReader::new(rows);
@@ -40,6 +41,7 @@ fn test_select_projection() {
         filter: None,
         limit: None,
         order_by: None,
+        aggregates: vec![],
     };
 
     let reader = MockReader::new(vec![row]);

@@ -13,6 +13,16 @@ pub struct Query {
     pub filter: Option<Expr>,
     pub limit: Option<usize>,
     pub order_by: Option<(String, SortOrder)>,
+    pub aggregates: Vec<Aggregate>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Aggregate {
+    Count(String),
+    Sum(String),
+    Avg(String),
+    Min(String),
+    Max(String),
 }
 
 #[derive(Debug)]

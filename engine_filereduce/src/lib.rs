@@ -2,6 +2,7 @@ pub mod executor {
     pub mod executor;
 }
 pub mod query {
+    pub mod aggregation;
     pub mod ast;
     pub mod parser;
     pub mod row_builder;

@@ -18,6 +18,7 @@ fn test_order_by_asc() {
         filter: None,
         limit: None,
         order_by: Some(("qty".to_string(), SortOrder::Asc)),
+        aggregates: vec![],
     };
 
     let reader = MockReader::new(rows);
@@ -47,6 +48,7 @@ fn test_order_by_desc() {
         filter: None,
         limit: None,
         order_by: Some(("qty".to_string(), SortOrder::Desc)),
+        aggregates: vec![],
     };
 
     let reader = MockReader::new(rows);
@@ -75,6 +77,7 @@ fn test_order_by_with_limit() {
         filter: None,
         limit: Some(3),
         order_by: Some(("qty".to_string(), SortOrder::Desc)),
+        aggregates: vec![],
     };
 
     let reader = MockReader::new(rows);

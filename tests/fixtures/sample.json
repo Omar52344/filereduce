@@ -1,0 +1,32 @@
+[
+    {
+        "number": "ORDER001",
+        "date": "2026-01-21",
+        "buyer": "BUYER001",
+        "seller": "SELLER001",
+        "lines": [
+            {"sku": "SKU001", "qty": 10, "price": 100.00},
+            {"sku": "SKU002", "qty": 20, "price": 200.00},
+            {"sku": "SKU003", "qty": 15, "price": 150.00}
+        ]
+    },
+    {
+        "number": "ORDER002",
+        "date": "2026-01-21",
+        "buyer": "BUYER002",
+        "seller": "SELLER002",
+        "lines": [
+            {"sku": "SKU004", "qty": 5, "price": 500.00},
+            {"sku": "SKU005", "qty": 8, "price": 800.00}
+        ]
+    },
+    {
+        "number": "ORDER003",
+        "date": "2026-01-21",
+        "buyer": "BUYER003",
+        "seller": "SELLER003",
+        "lines": [
+            {"sku": "SKU006", "qty": 3, "price": 300.00}
+        ]
+    }
+]

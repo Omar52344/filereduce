@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<orders>
+    <record>
+        <number>ORDER001</number>
+        <date>2026-01-21</date>
+        <buyer>BUYER001</buyer>
+        <seller>SELLER001</seller>
+    </record>
+    <record>
+        <sku>SKU001</sku>
+        <qty>10</qty>
+        <price>100.00</price>
+    </record>
+    <record>
+        <sku>SKU002</sku>
+        <qty>20</qty>
+        <price>200.00</price>
+    </record>
+    <record>
+        <sku>SKU003</sku>
+        <qty>15</qty>
+        <price>150.00</price>
+    </record>
+    <record>
+        <number>ORDER002</number>
+        <date>2026-01-21</date>
+        <buyer>BUYER002</buyer>
+        <seller>SELLER002</seller>
+    </record>
+    <record>
+        <sku>SKU004</sku>
+        <qty>5</qty>
+        <price>500.00</price>
+    </record>
+    <record>
+        <sku>SKU005</sku>
+        <qty>8</qty>
+        <price>800.00</price>
+    </record>
+</orders>
