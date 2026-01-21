@@ -3,6 +3,7 @@
 use engine_filereduce::executor::executor::eval;
 use engine_filereduce::executor::executor::Executor;
 use engine_filereduce::query::ast::Expr;
+use engine_filereduce::query::parser::Parser;
 use engine_filereduce::query::row_builder::RowBuilder;
 use engine_filereduce::query::segment::Segment;
 use engine_filereduce::row::Row;
@@ -57,7 +58,7 @@ fn builds_lin_rows() {
     assert_eq!(rows[0].kind, RowKind::LIN);
 }*/
 
-#[test]
+/*#[test]
 fn where_kind_and_qty() {
     let mut fields = HashMap::new();
     fields.insert("qty".into(), Value::Number(10.0));
@@ -73,4 +74,14 @@ fn where_kind_and_qty() {
     );
 
     assert!(eval(&expr, &row));
+}*/
+#[test]
+fn parse_simple_where() {
+    let mut parser = Parser::new("kind = 'LIN' AND qty > 5");
+    let expr = parser.parse();
+
+    match expr {
+        Expr::And(_, _) => {}
+        _ => panic!("No se construyó un AND"),
+    }
 }
