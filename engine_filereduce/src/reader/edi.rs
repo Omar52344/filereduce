@@ -1,4 +1,4 @@
-use std::fs::File;
+/*use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use crate::reader::reader::Reader;
@@ -31,12 +31,12 @@ impl Reader for EdiReader {
             }
 
             let mut row = Row::new();
-            row.insert("raw".into(), Value::Text(segment.into()));
+            row.insert("raw".into(), Value::Text(segment.to_string()));
 
             let mut parts = segment.split('+');
             let tag = parts.next().unwrap_or("");
 
-            row.insert("segment".into(), Value::Text(tag.into()));
+            row.insert("segment".into(), Value::Text(tag.to_string()));
 
             match tag {
                 "NAD" => {
@@ -44,12 +44,12 @@ impl Reader for EdiReader {
                     let party = parts.next();
 
                     if let Some(q) = qualifier {
-                        row.insert("qualifier".into(), Value::Text(q.into()));
+                        row.insert("qualifier".into(), Value::Text(q.to_string()));
                     }
 
                     if let Some(p) = party {
                         let id = p.split(':').next().unwrap_or(p);
-                        row.insert("party_id".into(), Value::Text(id.into()));
+                        row.insert("party_id".into(), Value::Text(id.to_string()));
                     }
                 }
 
@@ -59,12 +59,12 @@ impl Reader for EdiReader {
                     let sku = parts.next();
 
                     if let Some(l) = line {
-                        row.insert("line".into(), Value::Text(l.into()));
+                        row.insert("line".into(), Value::Text(l.to_string()));
                     }
 
                     if let Some(s) = sku {
                         let code = s.split(':').next().unwrap_or(s);
-                        row.insert("sku".into(), Value::Text(code.into()));
+                        row.insert("sku".into(), Value::Text(code.to_string()));
                     }
                 }
 
@@ -76,7 +76,7 @@ impl Reader for EdiReader {
                         let amount = it.next();
 
                         if let Some(q) = qualifier {
-                            row.insert("amount_type".into(), Value::Text(q.into()));
+                            row.insert("amount_type".into(), Value::Text(q.to_string()));
                         }
 
                         if let Some(a) = amount {
@@ -94,3 +94,16 @@ impl Reader for EdiReader {
         None
     }
 }
+pub fn parse_segment(segment: &str, line: usize) -> Row {
+    let mut row = Row::new();
+
+    let seg_id = segment.split('+').next().unwrap_or("");
+
+    row.insert("segment".into(), Value::Text(seg_id.into()));
+    row.insert("raw".into(), Value::Text(segment.into()));
+    row.insert("line".into(), Value::Number(line as f64));
+
+    // ⚠️ todavía no parseamos campos
+    row
+}
+*/

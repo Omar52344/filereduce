@@ -18,7 +18,7 @@ impl<R: Reader> Executor<R> {
         }
     }
 
-    pub fn next(&mut self) -> Option<Row> {
+    /*pub fn next(&mut self) -> Option<Row> {
         while let Some(row) = self.reader.next() {
             let mut projected = Row::new();
 
@@ -44,19 +44,34 @@ impl<R: Reader> Executor<R> {
             return Some(projected);
         }
         None
-    }
-    fn eval(expr: &Expr, row: &Row) -> bool {
-        match expr {
-            Expr::Eq(field, val) => {
-                matches!(row.get(field), Some(v) if v == val)
-            }
-            Expr::Gt(field, Value::Number(n)) => {
-                matches!(row.get(field), Some(Value::Number(v)) if v > n)
-            }
-            Expr::Lt(field, Value::Number(n)) => {
-                matches!(row.get(field), Some(Value::Number(v)) if v < n)
-            }
-            _ => false,
+    }*/
+}
+pub fn eval(expr: &Expr, row: &Row) -> bool {
+    match expr {
+        Expr::Eq(field, value) => row.fields.get(field) == Some(value),
+
+        Expr::Gt(field, Value::Number(n)) => {
+            matches!(
+                row.fields.get(field),
+                Some(Value::Number(v)) if v > n
+            )
         }
+
+        Expr::Lt(field, Value::Number(n)) => {
+            matches!(
+                row.fields.get(field),
+                Some(Value::Number(v)) if v < n
+            )
+        }
+
+        Expr::KindEq(kind) => &row.kind == kind,
+
+        Expr::And(left, right) => eval(left, row) && eval(right, row),
+
+        Expr::Or(left, right) => eval(left, row) || eval(right, row),
+
+        Expr::Not(inner) => !eval(inner, row),
+
+        _ => false,
     }
 }
