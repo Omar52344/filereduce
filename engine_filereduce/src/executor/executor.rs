@@ -3,6 +3,7 @@ use crate::query::ast::Query;
 use crate::reader::reader::Reader;
 use crate::row::Row;
 use crate::row::Value;
+
 pub struct Executor<R: Reader> {
     reader: R,
     query: Query,
@@ -18,16 +19,8 @@ impl<R: Reader> Executor<R> {
         }
     }
 
-    /*pub fn next(&mut self) -> Option<Row> {
+    pub fn next(&mut self) -> Option<Row> {
         while let Some(row) = self.reader.next() {
-            let mut projected = Row::new();
-
-            for field in &self.query.select {
-                if let Some(val) = row.get(field) {
-                    projected.insert(field.clone(), val.clone());
-                }
-            }
-
             self.count += 1;
 
             if let Some(limit) = self.query.limit {
@@ -35,16 +28,37 @@ impl<R: Reader> Executor<R> {
                     return None;
                 }
             }
+
             if let Some(ref filter) = self.query.filter {
-                if !Self::eval(filter, &row) {
+                if !eval(filter, &row) {
                     continue;
                 }
             }
 
+            let projected = if self.query.select.is_empty() {
+                row.clone()
+            } else {
+                let mut projected = Row::new(row.kind.clone());
+                for field in &self.query.select {
+                    if let Some(val) = row.get(field) {
+                        projected.insert(field.as_str(), val.clone());
+                    }
+                }
+                projected
+            };
+
             return Some(projected);
         }
         None
-    }*/
+    }
+
+    pub fn collect(mut self) -> Vec<Row> {
+        let mut results = Vec::new();
+        while let Some(row) = self.next() {
+            results.push(row);
+        }
+        results
+    }
 }
 pub fn eval(expr: &Expr, row: &Row) -> bool {
     match expr {

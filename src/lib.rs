@@ -1,3 +1,5 @@
+pub mod cli;
+pub mod error;
 pub mod processor;
 
 pub mod model {

@@ -1,18 +1,36 @@
-use std::io::{BufRead};
+use crate::error::Result;
 use crate::parser::edifact::parse_segment;
-use crate::model::document::{Document, Line};
 use crate::parser::segment::Segment;
-pub fn process<R: BufRead>(reader: R, writer: &mut dyn std::io::Write) {
-    let mut current_doc: Option<Document> = None;
-    let mut current_line: Option<Line> = None;
+use serde::Serialize;
+use std::io::{BufRead, Write};
+
+#[derive(Default, Serialize)]
+struct StreamingDocument {
+    doc_type: String,
+    number: String,
+    buyer: Option<String>,
+    seller: Option<String>,
+    lines: Vec<StreamingLine>,
+}
+
+#[derive(Default, Serialize)]
+struct StreamingLine {
+    sku: String,
+    qty: Option<f64>,
+    amount: Option<f64>,
+}
+
+pub fn process<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<()> {
+    let mut current_doc: Option<StreamingDocument> = None;
+    let mut current_line: Option<StreamingLine> = None;
 
     for line in reader.lines() {
-        let raw = line.unwrap();
+        let raw = line?;
         let segment = parse_segment(&raw);
 
         match segment {
             Segment::UNH => {
-                current_doc = Some(Document::default());
+                current_doc = Some(StreamingDocument::default());
             }
             Segment::BGM(num) => {
                 if let Some(doc) = current_doc.as_mut() {
@@ -20,13 +38,22 @@ pub fn process<R: BufRead>(reader: R, writer: &mut dyn std::io::Write) {
                 }
             }
             Segment::NAD("BY", id) => {
-                current_doc.as_mut().unwrap().buyer = Some(id.to_string());
+                if let Some(doc) = current_doc.as_mut() {
+                    doc.buyer = Some(id.to_string());
+                }
             }
             Segment::NAD("SU", id) => {
-                current_doc.as_mut().unwrap().seller = Some(id.to_string());
+                if let Some(doc) = current_doc.as_mut() {
+                    doc.seller = Some(id.to_string());
+                }
             }
             Segment::LIN(sku) => {
-                current_line = Some(Line {
+                if let Some(line) = current_line.take() {
+                    if let Some(doc) = current_doc.as_mut() {
+                        doc.lines.push(line);
+                    }
+                }
+                current_line = Some(StreamingLine {
                     sku: sku.to_string(),
                     ..Default::default()
                 });
@@ -43,13 +70,22 @@ pub fn process<R: BufRead>(reader: R, writer: &mut dyn std::io::Write) {
             }
             Segment::UNT => {
                 if let Some(line) = current_line.take() {
-                    current_doc.as_mut().unwrap().lines.push(line);
+                    if let Some(doc) = current_doc.as_mut() {
+                        doc.lines.push(line);
+                    }
                 }
 
-                let json = serde_json::to_string(&current_doc.take().unwrap()).unwrap();
-                writeln!(writer, "{}", json).unwrap();
+                if let Some(doc) = current_doc.take() {
+                    let json = serde_json::to_string(&doc)?;
+                    writeln!(writer, "{}", json)?;
+                }
+            }
+            Segment::UNZ => {
+                break;
             }
             _ => {}
         }
     }
+
+    Ok(())
 }

@@ -11,6 +11,7 @@ pub mod reader {
     pub mod edi;
     pub mod reader;
 }
+pub mod error;
 pub mod row;
 
 //use reader::edi::EdiReader;
