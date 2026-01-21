@@ -4,6 +4,7 @@ pub trait Reader {
     fn next(&mut self) -> Option<Row>;
 }
 
+#[derive(Clone)]
 pub struct MockReader {
     rows: Vec<Row>,
     index: usize,

@@ -7,7 +7,7 @@ pub enum SortOrder {
     Desc,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Query {
     pub select: Vec<String>,
     pub filter: Option<Expr>,
@@ -25,7 +25,7 @@ pub enum Aggregate {
     Max(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Eq(String, Value),
     Gt(String, Value),
@@ -35,9 +35,7 @@ pub enum Expr {
     Like(String, String),
     In(String, Vec<Value>),
     Between(String, Value, Value),
-
     KindEq(RowKind),
-
     And(Box<Expr>, Box<Expr>),
     Or(Box<Expr>, Box<Expr>),
     Not(Box<Expr>),
