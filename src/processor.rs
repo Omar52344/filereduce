@@ -20,7 +20,21 @@ struct StreamingLine {
     amount: Option<f64>,
 }
 
-pub fn process<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<()> {
+pub enum FileFormat {
+    Edifact,
+    Xml,
+    Json,
+}
+
+pub fn process<R: BufRead, W: Write>(reader: R, writer: &mut W, format: FileFormat) -> Result<()> {
+    match format {
+        FileFormat::Edifact => process_edifact(reader, writer),
+        FileFormat::Xml => crate::parser::xml::process_xml(reader, writer),
+        FileFormat::Json => crate::parser::json::process_json(reader, writer),
+    }
+}
+
+fn process_edifact<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<()> {
     let mut current_doc: Option<StreamingDocument> = None;
     let mut current_line: Option<StreamingLine> = None;
 

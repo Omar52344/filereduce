@@ -1,7 +1,7 @@
 use clap::Parser;
 use filereduce::cli::{Cli, Commands};
 use filereduce::error::Result;
-use filereduce::processor::process;
+use filereduce::processor::{process, FileFormat};
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 
@@ -16,14 +16,19 @@ fn main() -> Result<()> {
         Commands::Process {
             input,
             output,
-            format: _,
+            format,
             query: _,
             limit: _,
         } => {
             let input_file = File::open(&input)?;
             let output_file = File::create(&output)?;
 
-            process(BufReader::new(input_file), &mut BufWriter::new(output_file))?;
+            let file_format = determine_format(&input, format.as_deref());
+            process(
+                BufReader::new(input_file),
+                &mut BufWriter::new(output_file),
+                file_format,
+            )?;
             println!("Processed {} to {}", input.display(), output.display());
         }
 
@@ -51,6 +56,22 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn determine_format(path: &std::path::Path, format: Option<&str>) -> FileFormat {
+    if let Some(fmt) = format {
+        match fmt.to_lowercase().as_str() {
+            "xml" => FileFormat::Xml,
+            "json" => FileFormat::Json,
+            _ => FileFormat::Edifact,
+        }
+    } else {
+        match path.extension().and_then(|ext| ext.to_str()) {
+            Some("xml") => FileFormat::Xml,
+            Some("json") | Some("jsonl") => FileFormat::Json,
+            _ => FileFormat::Edifact,
+        }
+    }
+}
+
 #[test]
 fn parse_simple_where() {
     use engine_filereduce::query::ast::Expr;
@@ -62,5 +83,61 @@ fn parse_simple_where() {
     match expr {
         Expr::And(_, _) => {}
         _ => panic!("No se construyó un AND"),
+    }
+}
+
+#[test]
+fn parse_like_operator() {
+    use engine_filereduce::query::ast::Expr;
+    use engine_filereduce::query::parser::Parser;
+
+    let mut parser = Parser::new("sku LIKE 'ABC%'");
+    let expr = parser.parse();
+
+    match expr {
+        Expr::Like(_, _) => {}
+        _ => panic!("No se construyó un LIKE"),
+    }
+}
+
+#[test]
+fn parse_in_operator() {
+    use engine_filereduce::query::ast::Expr;
+    use engine_filereduce::query::parser::Parser;
+
+    let mut parser = Parser::new("qty IN (1, 2, 3)");
+    let expr = parser.parse();
+
+    match expr {
+        Expr::In(_, _) => {}
+        _ => panic!("No se construyó un IN"),
+    }
+}
+
+#[test]
+fn parse_between_operator() {
+    use engine_filereduce::query::ast::Expr;
+    use engine_filereduce::query::parser::Parser;
+
+    let mut parser = Parser::new("qty BETWEEN 1 AND 10");
+    let expr = parser.parse();
+
+    match expr {
+        Expr::Between(_, _, _) => {}
+        _ => panic!("No se construyó un BETWEEN"),
+    }
+}
+
+#[test]
+fn parse_or_operator() {
+    use engine_filereduce::query::ast::Expr;
+    use engine_filereduce::query::parser::Parser;
+
+    let mut parser = Parser::new("kind = 'LIN' OR kind = 'BGM'");
+    let expr = parser.parse();
+
+    match expr {
+        Expr::Or(_, _) => {}
+        _ => panic!("No se construyó un OR"),
     }
 }

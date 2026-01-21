@@ -15,6 +15,9 @@ pub enum FileReduceError {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    #[error("XML error: {0}")]
+    Xml(#[from] quick_xml::Error),
+
     #[error("Invalid segment format: {0}")]
     InvalidSegment(String),
 

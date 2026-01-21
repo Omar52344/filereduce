@@ -1,8 +1,6 @@
-//use crate::expr::Expr;
-//use crate::value::Value;
-
 use crate::query::ast::Expr;
 use crate::row::Value;
+
 #[derive(Debug, Clone)]
 pub struct Parser {
     tokens: Vec<String>,
@@ -16,10 +14,21 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Expr {
-        self.parse_expr()
+        self.parse_or()
     }
 
-    fn parse_expr(&mut self) -> Expr {
+    fn parse_or(&mut self) -> Expr {
+        let mut left = self.parse_and();
+
+        while self.match_token("OR") {
+            let right = self.parse_and();
+            left = Expr::Or(Box::new(left), Box::new(right));
+        }
+
+        left
+    }
+
+    fn parse_and(&mut self) -> Expr {
         let mut left = self.parse_term();
 
         while self.match_token("AND") {
@@ -32,7 +41,7 @@ impl Parser {
 
     fn parse_term(&mut self) -> Expr {
         if self.match_token("(") {
-            let expr = self.parse_expr();
+            let expr = self.parse_or();
             self.expect(")");
             expr
         } else {
@@ -41,14 +50,61 @@ impl Parser {
     }
 
     fn parse_factor(&mut self) -> Expr {
+        if self.match_token("NOT") {
+            let inner = self.parse_term();
+            return Expr::Not(Box::new(inner));
+        }
+
         let field = self.next().to_string();
         let op = self.next();
-        let value = self.parse_value();
 
         match op.as_str() {
-            "=" => Expr::Eq(field, value),
-            ">" => Expr::Gt(field, value),
-            "<" => Expr::Lt(field, value),
+            "=" => {
+                let value = self.parse_value();
+                Expr::Eq(field, value)
+            }
+            ">" => {
+                let value = self.parse_value();
+                Expr::Gt(field, value)
+            }
+            "<" => {
+                let value = self.parse_value();
+                Expr::Lt(field, value)
+            }
+            ">=" => {
+                let value = self.parse_value();
+                Expr::Gte(field, value)
+            }
+            "<=" => {
+                let value = self.parse_value();
+                Expr::Lte(field, value)
+            }
+            "LIKE" => {
+                let pattern = self.parse_string();
+                Expr::Like(field, pattern)
+            }
+            "IN" => {
+                self.expect("(");
+                let mut values = Vec::new();
+                loop {
+                    let token = self.peek().unwrap_or("");
+                    if token == ")" {
+                        break;
+                    }
+                    values.push(self.parse_value());
+                    if !self.match_token(",") {
+                        break;
+                    }
+                }
+                self.expect(")");
+                Expr::In(field, values)
+            }
+            "BETWEEN" => {
+                let start = self.parse_value();
+                self.expect("AND");
+                let end = self.parse_value();
+                Expr::Between(field, start, end)
+            }
             _ => panic!("Operador no soportado: {}", op),
         }
     }
@@ -61,6 +117,11 @@ impl Parser {
         } else {
             Value::Number(token.parse().expect("Número inválido"))
         }
+    }
+
+    fn parse_string(&mut self) -> String {
+        let token = self.next();
+        token.trim_matches('\'').to_string()
     }
 
     fn match_token(&mut self, expected: &str) -> bool {
@@ -91,10 +152,16 @@ impl Parser {
 }
 
 fn tokenize(input: &str) -> Vec<String> {
-    input
+    let result = input
         .replace("(", " ( ")
         .replace(")", " ) ")
+        .replace(">=", " >= ")
+        .replace("<=", " <= ")
+        .replace("!=", " != ")
+        .replace(",", " , ")
         .split_whitespace()
         .map(|s| s.to_string())
-        .collect()
+        .collect::<Vec<String>>();
+
+    result
 }
