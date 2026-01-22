@@ -38,6 +38,9 @@ filereduce process input.jsonl output.jsonl
 
 # Especificar formato
 filereduce process data.txt output.jsonl --format xml
+
+# Procesar con filtrado (SQL-like)
+filereduce process input.edifact output.jsonl --query "qty > 5 AND sku LIKE 'SKU%'"
 ```
 
 ### Consultas SQL

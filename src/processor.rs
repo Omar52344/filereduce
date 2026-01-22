@@ -11,6 +11,7 @@ use std::io::{BufRead, Write};
 struct StreamingDocument {
     doc_type: String,
     number: String,
+    date: Option<String>,
     buyer: Option<String>,
     seller: Option<String>,
     lines: Vec<StreamingLine>,
@@ -63,6 +64,13 @@ fn process_edifact<R: BufRead, W: Write>(
                     doc.number = num.to_string();
                 }
             }
+            Segment::DTM(qualifier, date) => {
+                if qualifier == "137" {
+                    if let Some(doc) = current_doc.as_mut() {
+                        doc.date = Some(date.to_string());
+                    }
+                }
+            }
             Segment::NAD("BY", id) => {
                 if let Some(doc) = current_doc.as_mut() {
                     doc.buyer = Some(id.to_string());
@@ -107,6 +115,9 @@ fn process_edifact<R: BufRead, W: Write>(
                         let mut matched = false;
                         let mut base_row = Row::new(RowKind::UNH);
                         base_row.insert("number", Value::Text(doc.number.clone()));
+                        if let Some(val) = &doc.date {
+                            base_row.insert("date", Value::Text(val.clone()));
+                        }
                         if let Some(val) = &doc.buyer {
                             base_row.insert("buyer", Value::Text(val.clone()));
                         }
