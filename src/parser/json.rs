@@ -1,8 +1,15 @@
 use crate::error::Result;
+use engine_filereduce::executor::executor::eval;
+use engine_filereduce::query::ast::Expr;
+use engine_filereduce::row::{Row, RowKind, Value as RowValue};
 use serde_json::Value;
 use std::io::{BufRead, Write};
 
-pub fn process_json<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<()> {
+pub fn process_json<R: BufRead, W: Write>(
+    reader: R,
+    writer: &mut W,
+    query: Option<&Expr>,
+) -> Result<()> {
     for line in reader.lines() {
         let line = line?;
 
@@ -12,8 +19,36 @@ pub fn process_json<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<(
 
         let json_value: Value = serde_json::from_str(&line)?;
 
-        let normalized = normalize_json(&json_value);
-        writeln!(writer, "{}", normalized)?;
+        let should_write = if let Some(expr) = query {
+            // Convert JSON Value to Row
+            let mut row = Row::new(RowKind::UNH);
+            if let Value::Object(map) = &json_value {
+                for (k, v) in map {
+                    match v {
+                        Value::String(s) => {
+                            row.insert(k, RowValue::Text(s.clone()));
+                        }
+                        Value::Number(n) => {
+                            if let Some(f) = n.as_f64() {
+                                row.insert(k, RowValue::Number(f));
+                            }
+                        }
+                        Value::Bool(b) => {
+                            row.insert(k, RowValue::Text(b.to_string()));
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            eval(expr, &row)
+        } else {
+            true
+        };
+
+        if should_write {
+            let normalized = normalize_json(&json_value);
+            writeln!(writer, "{}", normalized)?;
+        }
     }
 
     Ok(())
@@ -65,7 +100,9 @@ mod tests {
 {"sku": "ITEM2", "qty": 20}"#;
 
         let mut output = Vec::new();
-        let result = process_json(json_input.as_bytes(), &mut output);
+        let result = process_json(json_input.as_bytes(), &mut output, None);
+
+        assert!(result.is_ok());
 
         assert!(result.is_ok());
         let output_str = String::from_utf8(output).unwrap();

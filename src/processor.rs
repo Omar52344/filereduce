@@ -38,8 +38,8 @@ pub fn process<R: BufRead, W: Write>(
 ) -> Result<()> {
     match format {
         FileFormat::Edifact => process_edifact(reader, writer, query),
-        FileFormat::Xml => crate::parser::xml::process_xml(reader, writer),
-        FileFormat::Json => crate::parser::json::process_json(reader, writer),
+        FileFormat::Xml => crate::parser::xml::process_xml(reader, writer, query),
+        FileFormat::Json => crate::parser::json::process_json(reader, writer, query),
     }
 }
 

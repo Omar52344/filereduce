@@ -1,4 +1,7 @@
 use crate::error::Result;
+use engine_filereduce::executor::executor::eval;
+use engine_filereduce::query::ast::Expr;
+use engine_filereduce::row::{Row, RowKind, Value as RowValue};
 use quick_xml::events::Event;
 use quick_xml::Reader as XmlReader;
 use std::collections::HashMap;
@@ -9,7 +12,11 @@ pub struct XmlRecord {
     pub fields: HashMap<String, String>,
 }
 
-pub fn process_xml<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<()> {
+pub fn process_xml<R: BufRead, W: Write>(
+    reader: R,
+    writer: &mut W,
+    query: Option<&Expr>,
+) -> Result<()> {
     let mut xml_reader = XmlReader::from_reader(reader);
     xml_reader.config_mut().trim_text(true);
 
@@ -46,8 +53,26 @@ pub fn process_xml<R: BufRead, W: Write>(reader: R, writer: &mut W) -> Result<()
 
                 if tag_name == "record" || tag_name == "item" || tag_name == "row" {
                     if let Some(record) = current_record.take() {
-                        let json = serde_json::to_string(&record.fields)?;
-                        writeln!(writer, "{}", json)?;
+                        let should_write = if let Some(expr) = query {
+                            let mut row = Row::new(RowKind::UNH);
+                            for (k, v) in &record.fields {
+                                // Try to parse as number if possible, otherwise text
+                                let val = if let Ok(n) = v.parse::<f64>() {
+                                    RowValue::Number(n)
+                                } else {
+                                    RowValue::Text(v.clone())
+                                };
+                                row.insert(k, val);
+                            }
+                            eval(expr, &row)
+                        } else {
+                            true
+                        };
+
+                        if should_write {
+                            let json = serde_json::to_string(&record.fields)?;
+                            writeln!(writer, "{}", json)?;
+                        }
                     }
                 } else if current_tag.as_ref() == Some(&tag_name) {
                     if let Some(ref mut record) = current_record {
@@ -87,7 +112,7 @@ mod tests {
         </records>"#;
 
         let mut output = Vec::new();
-        let result = process_xml(xml_input.as_bytes(), &mut output);
+        let result = process_xml(xml_input.as_bytes(), &mut output, None);
 
         assert!(result.is_ok());
         let output_str = String::from_utf8(output).unwrap();

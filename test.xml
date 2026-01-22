@@ -1,0 +1,14 @@
+<records>
+    <record>
+        <doc_type>ORDER</doc_type>
+        <number>PO001</number>
+        <buyer>BUYER1</buyer>
+        <amount>100.0</amount>
+    </record>
+    <record>
+        <doc_type>ORDER</doc_type>
+        <number>PO002</number>
+        <buyer>BUYER2</buyer>
+        <amount>200.0</amount>
+    </record>
+</records>
