@@ -1,4 +1,5 @@
 use clap::Parser;
+use engine_filereduce::query::parser::Parser as QueryParser;
 use filereduce::cli::{Cli, Commands};
 use filereduce::error::Result;
 use filereduce::processor::{process, FileFormat};
@@ -17,17 +18,26 @@ fn main() -> Result<()> {
             input,
             output,
             format,
-            query: _,
+            query,
             limit: _,
         } => {
             let input_file = File::open(&input)?;
             let output_file = File::create(&output)?;
 
             let file_format = determine_format(&input, format.as_deref());
+
+            let expr = if let Some(q) = query {
+                let mut parser = QueryParser::new(&q);
+                Some(parser.parse())
+            } else {
+                None
+            };
+
             process(
                 BufReader::new(input_file),
                 &mut BufWriter::new(output_file),
                 file_format,
+                expr.as_ref(),
             )?;
             println!("Processed {} to {}", input.display(), output.display());
         }

@@ -8,8 +8,13 @@ fn test_edifact_processing() {
     let mut output = Vec::new();
     {
         let mut writer = BufWriter::new(&mut output);
-        process(BufReader::new(input), &mut writer, FileFormat::Edifact)
-            .expect("Failed to process EDI file");
+        process(
+            BufReader::new(input),
+            &mut writer,
+            FileFormat::Edifact,
+            None,
+        )
+        .expect("Failed to process EDI file");
     }
 
     let output_str = String::from_utf8(output).expect("Invalid UTF-8");
@@ -49,7 +54,7 @@ fn test_xml_processing() {
     let mut output = Vec::new();
     {
         let mut writer = BufWriter::new(&mut output);
-        process(BufReader::new(input), &mut writer, FileFormat::Xml)
+        process(BufReader::new(input), &mut writer, FileFormat::Xml, None)
             .expect("Failed to process XML file");
     }
 
@@ -78,7 +83,7 @@ fn test_jsonl_processing() {
     let mut output = Vec::new();
     {
         let mut writer = BufWriter::new(&mut output);
-        process(BufReader::new(input), &mut writer, FileFormat::Json)
+        process(BufReader::new(input), &mut writer, FileFormat::Json, None)
             .expect("Failed to process JSONL file");
     }
 
@@ -110,7 +115,7 @@ fn test_jsonl_processing() {
 fn test_json_processing() {
     let input = File::open("tests/fixtures/sample.json").expect("Failed to open JSON file");
     let mut output = Vec::new();
-    let result = process(BufReader::new(input), &mut output, FileFormat::Json);
+    let result = process(BufReader::new(input), &mut output, FileFormat::Json, None);
 
     assert!(
         result.is_err(),
@@ -127,7 +132,7 @@ fn test_empty_files_handling() {
     let mut output = Vec::new();
     {
         let mut writer = BufWriter::new(&mut output);
-        process(BufReader::new(input), &mut writer, FileFormat::Json)
+        process(BufReader::new(input), &mut writer, FileFormat::Json, None)
             .expect("Failed to process empty file");
     }
 

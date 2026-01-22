@@ -10,7 +10,7 @@ fn bench_process_small_jsonl(c: &mut Criterion) {
         b.iter(|| {
             output.clear();
             let mut writer = BufWriter::new(&mut output);
-            process(&mut input, &mut writer, FileFormat::Json).unwrap();
+            process(&mut input, &mut writer, FileFormat::Json, None).unwrap();
         });
     });
 }
