@@ -7,7 +7,7 @@ use engine_filereduce::row::{Row, RowKind, Value};
 use serde::Serialize;
 use std::io::{BufRead, Write};
 
-#[derive(Default, Serialize)]
+#[derive(Serialize)]
 struct StreamingDocument {
     interchange_id: String,
     sender: String,
@@ -16,14 +16,35 @@ struct StreamingDocument {
     document_number: String,
     document_date: Option<String>,
     requested_delivery_date: Option<String>,
+    currency: String,
     buyer: Option<String>,
     seller: Option<String>,
     line_count_check: Option<u64>,
     lines: Vec<StreamingLine>,
 }
 
+impl Default for StreamingDocument {
+    fn default() -> Self {
+        Self {
+            interchange_id: Default::default(),
+            sender: Default::default(),
+            receiver: Default::default(),
+            doc_type: Default::default(),
+            document_number: Default::default(),
+            document_date: Default::default(),
+            requested_delivery_date: Default::default(),
+            currency: "UNKNOWN".to_string(),
+            buyer: Default::default(),
+            seller: Default::default(),
+            line_count_check: Default::default(),
+            lines: Default::default(),
+        }
+    }
+}
+
 #[derive(Default, Serialize)]
 struct StreamingLine {
+    line_no: u64,
     sku: String,
     qty: Option<f64>,
     amount: Option<f64>,
@@ -108,13 +129,14 @@ fn process_edifact<R: BufRead, W: Write>(
                     doc.seller = Some(id.to_string());
                 }
             }
-            Segment::LIN(sku) => {
+            Segment::LIN(line_num, sku) => {
                 if let Some(line) = current_line.take() {
                     if let Some(doc) = current_doc.as_mut() {
                         doc.lines.push(line);
                     }
                 }
                 current_line = Some(StreamingLine {
+                    line_no: line_num.parse().unwrap_or(0),
                     sku: sku.to_string(),
                     ..Default::default()
                 });
@@ -134,6 +156,11 @@ fn process_edifact<R: BufRead, W: Write>(
                     if let Some(doc) = current_doc.as_mut() {
                         doc.line_count_check = val.parse().ok();
                     }
+                }
+            }
+            Segment::CUX(curr) => {
+                if let Some(doc) = current_doc.as_mut() {
+                    doc.currency = curr.to_string();
                 }
             }
             Segment::UNT => {
