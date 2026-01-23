@@ -26,6 +26,15 @@ pub enum FileReduceError {
 
     #[error("Document is incomplete")]
     IncompleteDocument,
+
+    #[error("Database error: {0}")]
+    Db(#[from] tiberius::error::Error),
+
+    #[error("Connection manager error: {0}")]
+    Manager(#[from] bb8_tiberius::Error),
+
+    #[error("Connection pool error: {0}")]
+    Pool(#[from] bb8::RunError<bb8_tiberius::Error>),
 }
 
 pub type Result<T> = std::result::Result<T, FileReduceError>;

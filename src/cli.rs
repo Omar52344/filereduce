@@ -47,4 +47,10 @@ pub enum Commands {
         #[arg(short, long)]
         to: String,
     },
+
+    Insert {
+        input: PathBuf,
+        #[arg(short, long)]
+        config: PathBuf,
+    },
 }

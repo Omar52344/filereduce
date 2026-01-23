@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::parser::edifact::parse_segment;
 use crate::parser::segment::Segment;
+use crate::sink::{DataSink, SinkItem};
 use engine_filereduce::executor::executor::eval;
 use engine_filereduce::query::ast::Expr;
 use engine_filereduce::row::{Row, RowKind, Value};
@@ -8,19 +9,19 @@ use serde::Serialize;
 use std::io::{BufRead, Write};
 
 #[derive(Serialize)]
-struct StreamingDocument {
-    interchange_id: String,
-    sender: String,
-    receiver: String,
-    doc_type: String,
-    document_number: String,
-    document_date: Option<String>,
-    requested_delivery_date: Option<String>,
-    currency: String,
-    buyer: Option<String>,
-    seller: Option<String>,
-    line_count_check: Option<u64>,
-    lines: Vec<StreamingLine>,
+pub struct StreamingDocument {
+    pub interchange_id: String,
+    pub sender: String,
+    pub receiver: String,
+    pub doc_type: String,
+    pub document_number: String,
+    pub document_date: Option<String>,
+    pub requested_delivery_date: Option<String>,
+    pub currency: String,
+    pub buyer: Option<String>,
+    pub seller: Option<String>,
+    pub line_count_check: Option<u64>,
+    pub lines: Vec<StreamingLine>,
 }
 
 impl Default for StreamingDocument {
@@ -43,12 +44,12 @@ impl Default for StreamingDocument {
 }
 
 #[derive(Default, Serialize)]
-struct StreamingLine {
-    line_no: u64,
-    sku: String,
-    qty: Option<f64>,
-    uom: Option<String>,
-    amount: Option<f64>,
+pub struct StreamingLine {
+    pub line_no: u64,
+    pub sku: String,
+    pub qty: Option<f64>,
+    pub uom: Option<String>,
+    pub amount: Option<f64>,
 }
 
 pub enum FileFormat {
@@ -57,22 +58,28 @@ pub enum FileFormat {
     Json,
 }
 
-pub fn process<R: BufRead, W: Write>(
+pub async fn process<R: BufRead + Send>(
     reader: R,
-    writer: &mut W,
+    sink: &mut dyn DataSink,
     format: FileFormat,
     query: Option<&Expr>,
 ) -> Result<()> {
     match format {
-        FileFormat::Edifact => process_edifact(reader, writer, query),
-        FileFormat::Xml => crate::parser::xml::process_xml(reader, writer, query),
-        FileFormat::Json => crate::parser::json::process_json(reader, writer, query),
+        FileFormat::Edifact => process_edifact(reader, sink, query).await,
+        FileFormat::Xml => Err(crate::error::FileReduceError::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "XML not yet supported with async Sink",
+        ))),
+        FileFormat::Json => Err(crate::error::FileReduceError::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "JSON not yet supported with async Sink",
+        ))),
     }
 }
 
-fn process_edifact<R: BufRead, W: Write>(
+async fn process_edifact<R: BufRead>(
     reader: R,
-    writer: &mut W,
+    sink: &mut dyn DataSink,
     query: Option<&Expr>,
 ) -> Result<()> {
     let mut current_doc: Option<StreamingDocument> = None;
@@ -221,8 +228,7 @@ fn process_edifact<R: BufRead, W: Write>(
                     };
 
                     if should_write {
-                        let json = serde_json::to_string(&doc)?;
-                        writeln!(writer, "{}", json)?;
+                        sink.send(SinkItem::Document(doc)).await?;
                     }
                 }
             }

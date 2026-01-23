@@ -6,7 +6,8 @@ use filereduce::processor::{process, FileFormat};
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     if cli.verbose {
@@ -33,24 +34,51 @@ fn main() -> Result<()> {
                 None
             };
 
+            let mut sink = filereduce::sink::file::FileDataSink::new(BufWriter::new(output_file));
+
             process(
                 BufReader::new(input_file),
-                &mut BufWriter::new(output_file),
+                &mut sink,
                 file_format,
                 expr.as_ref(),
-            )?;
+            )
+            .await?;
+
+            use filereduce::sink::DataSink; // Import trait
+            sink.flush().await?;
+
             println!("Processed {} to {}", input.display(), output.display());
+        }
+
+        Commands::Insert { input, config } => {
+            let config_content = std::fs::read_to_string(&config)?;
+            let ingest_config: filereduce::config::IngestConfig =
+                serde_yaml::from_str(&config_content)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+            let mut sink = filereduce::sink::db::DbDataSink::new(ingest_config.ingest).await?;
+            let input_file = File::open(&input)?;
+
+            use filereduce::sink::DataSink;
+            process(
+                BufReader::new(input_file),
+                &mut sink,
+                FileFormat::Edifact,
+                None,
+            )
+            .await?;
+            sink.flush().await?;
         }
 
         Commands::Query {
             input,
-            query,
-            output,
+            query: _,
+            output: _,
         } => {
-            println!("Query: {} on {}", query, input.display());
-            if let Some(out) = output {
-                println!("Output: {}", out.display());
-            }
+            println!(
+                "Query command not fully implemented in async refactor yet for {}",
+                input.display()
+            );
         }
 
         Commands::Convert {

@@ -1,6 +1,8 @@
 pub mod cli;
+pub mod config;
 pub mod error;
 pub mod processor;
+pub mod sink;
 
 pub mod model {
     pub mod document;
