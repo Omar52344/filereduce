@@ -43,26 +43,16 @@ filereduce process data.txt output.jsonl --format xml
 filereduce process input.edifact output.jsonl --query "qty > 5 AND sku LIKE 'SKU%'"
 ```
 
-### Consultas SQL
-
-```bash
 # Consulta simple
-filereduce query input.jsonl "qty > 100"
 
-# Consulta con LIKE
-filereduce query input.jsonl "sku LIKE 'SKU%'" --output filtered.jsonl
+CONSULTAS PROBADAS
+filereduce process sample.jsonl out_json_filtered.jsonl --query "number = 'ORDER001'"
 
-# Consulta con múltiples condiciones
-filereduce query input.jsonl "qty > 50 AND price < 1000" --output results.jsonl
+filereduce process sample.xml out_xml_filtered.jsonl --query "number = 'ORDER001'"
 
-# Consulta con agregaciones (futuro)
-filereduce query input.jsonl "SELECT COUNT(*), SUM(qty), AVG(price) FROM *"
-```
+filereduce process sample.edifact out_edifact_filtered.jsonl --query "number = 'ORDER001'"
 
-## Formatos soportados
-
-### EDIFACT
-- Segmentos: UNH, BGM, DTM, NAD, LIN, QTY, MOA, UNT, UNZ
+filereduce process sample.edifact output2.jsonl --query "number LIKE '%ORDER001%' AND sku LIKE 'SKU00%'"
 - Conversión automática a JSON estructurado
 
 ### XML

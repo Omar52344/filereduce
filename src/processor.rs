@@ -9,11 +9,16 @@ use std::io::{BufRead, Write};
 
 #[derive(Default, Serialize)]
 struct StreamingDocument {
+    interchange_id: String,
+    sender: String,
+    receiver: String,
     doc_type: String,
-    number: String,
-    date: Option<String>,
+    document_number: String,
+    document_date: Option<String>,
+    requested_delivery_date: Option<String>,
     buyer: Option<String>,
     seller: Option<String>,
+    line_count_check: Option<u64>,
     lines: Vec<StreamingLine>,
 }
 
@@ -50,24 +55,46 @@ fn process_edifact<R: BufRead, W: Write>(
 ) -> Result<()> {
     let mut current_doc: Option<StreamingDocument> = None;
     let mut current_line: Option<StreamingLine> = None;
+    let mut interchange_id = String::new();
+    let mut sender_id = String::new();
+    let mut receiver_id = String::new();
 
     for line in reader.lines() {
         let raw = line?;
+        if raw.trim().is_empty() {
+            continue;
+        }
         let segment = parse_segment(&raw);
 
         match segment {
-            Segment::UNH => {
-                current_doc = Some(StreamingDocument::default());
+            Segment::UNB(s, r, id) => {
+                sender_id = s.to_string();
+                receiver_id = r.to_string();
+                interchange_id = id.to_string();
             }
-            Segment::BGM(num) => {
+            Segment::UNH => {
+                current_doc = Some(StreamingDocument {
+                    interchange_id: interchange_id.clone(),
+                    sender: sender_id.clone(),
+                    receiver: receiver_id.clone(),
+                    ..Default::default()
+                });
+            }
+            Segment::BGM(code, num) => {
                 if let Some(doc) = current_doc.as_mut() {
-                    doc.number = num.to_string();
+                    doc.document_number = num.to_string();
+                    doc.doc_type = match code {
+                        "220" => "ORDERS".to_string(),
+                        _ => code.to_string(),
+                    };
                 }
             }
             Segment::DTM(qualifier, date) => {
-                if qualifier == "137" {
-                    if let Some(doc) = current_doc.as_mut() {
-                        doc.date = Some(date.to_string());
+                if let Some(doc) = current_doc.as_mut() {
+                    match qualifier {
+                        "137" => doc.document_date = Some(date.to_string()),
+                        "2" => doc.requested_delivery_date = Some(date.to_string()),
+                        _ => {}
                     }
                 }
             }
@@ -102,6 +129,13 @@ fn process_edifact<R: BufRead, W: Write>(
                     line.amount = amt.parse().ok();
                 }
             }
+            Segment::CNT(code, val) => {
+                if code == "2" {
+                    if let Some(doc) = current_doc.as_mut() {
+                        doc.line_count_check = val.parse().ok();
+                    }
+                }
+            }
             Segment::UNT => {
                 if let Some(line) = current_line.take() {
                     if let Some(doc) = current_doc.as_mut() {
@@ -111,11 +145,13 @@ fn process_edifact<R: BufRead, W: Write>(
 
                 if let Some(doc) = current_doc.take() {
                     let should_write = if let Some(expr) = query {
-                        // Flatten document to rows and check if any match the query
                         let mut matched = false;
                         let mut base_row = Row::new(RowKind::UNH);
-                        base_row.insert("number", Value::Text(doc.number.clone()));
-                        if let Some(val) = &doc.date {
+                        base_row.insert("number", Value::Text(doc.document_number.clone()));
+                        base_row.insert("doc_type", Value::Text(doc.doc_type.clone()));
+                        base_row.insert("interchange_id", Value::Text(doc.interchange_id.clone()));
+                        base_row.insert("sender", Value::Text(doc.sender.clone()));
+                        if let Some(val) = &doc.document_date {
                             base_row.insert("date", Value::Text(val.clone()));
                         }
                         if let Some(val) = &doc.buyer {
@@ -157,9 +193,7 @@ fn process_edifact<R: BufRead, W: Write>(
                     }
                 }
             }
-            Segment::UNZ => {
-                break;
-            }
+            Segment::UNZ => {}
             _ => {}
         }
     }
