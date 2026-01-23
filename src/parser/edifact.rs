@@ -30,7 +30,11 @@ pub fn parse_segment<'a>(raw: &'a str) -> Segment<'a> {
             tokens.get(1).and_then(|v| v.get(0)).copied().unwrap_or(""),
             tokens.get(3).and_then(|v| v.get(0)).copied().unwrap_or(""),
         ),
-        "QTY" => Segment::QTY(tokens[1][0], tokens[1][1]),
+        "QTY" => Segment::QTY(
+            tokens[1][0],
+            tokens[1][1],
+            tokens[1].get(2).copied().unwrap_or(""),
+        ),
         "MOA" => Segment::MOA(tokens[1][0], tokens[1][1]),
         "CNT" => Segment::CNT(tokens[1][0], tokens[1][1]),
         "CUX" => Segment::CUX(tokens.get(1).and_then(|v| v.get(1)).copied().unwrap_or("")),

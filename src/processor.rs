@@ -47,6 +47,7 @@ struct StreamingLine {
     line_no: u64,
     sku: String,
     qty: Option<f64>,
+    uom: Option<String>,
     amount: Option<f64>,
 }
 
@@ -141,9 +142,14 @@ fn process_edifact<R: BufRead, W: Write>(
                     ..Default::default()
                 });
             }
-            Segment::QTY(_, qty) => {
+            Segment::QTY(_, qty, unit) => {
                 if let Some(line) = current_line.as_mut() {
                     line.qty = qty.parse().ok();
+                    line.uom = if !unit.is_empty() {
+                        Some(unit.to_string())
+                    } else {
+                        None
+                    };
                 }
             }
             Segment::MOA(_, amt) => {
