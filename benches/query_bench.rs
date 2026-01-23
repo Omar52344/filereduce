@@ -1,7 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use engine_filereduce::executor::executor::Executor;
-use engine_filereduce::query::ast::{Expr, Query, SortOrder};
-use engine_filereduce::query::parser::Parser;
+use engine_filereduce::query::ast::{Expr, Query};
 use engine_filereduce::reader::reader::MockReader;
 use engine_filereduce::row::{Row, RowKind, Value};
 

@@ -1,19 +1,24 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use filereduce::processor::{process, FileFormat};
-use std::io::{BufRead, BufWriter};
+use filereduce::sink::file::FileDataSink;
+use std::io::BufWriter;
 
-fn bench_process_small_jsonl(c: &mut Criterion) {
-    let data = include_str!("../tests/fixtures/sample.jsonl");
-    c.bench_function("process_small_jsonl", |b| {
-        let mut input = data.as_bytes();
-        let mut output = Vec::new();
-        b.iter(|| {
-            output.clear();
+fn bench_process_small_edifact(c: &mut Criterion) {
+    let data = include_str!("../tests/fixtures/sample.edifact");
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    c.bench_function("process_small_edifact", |b| {
+        b.to_async(&rt).iter(|| async {
+            let input = data.as_bytes();
+            let mut output = Vec::new();
             let mut writer = BufWriter::new(&mut output);
-            process(&mut input, &mut writer, FileFormat::Json, None).unwrap();
+            let mut sink = FileDataSink::new(&mut writer);
+            process(input, &mut sink, FileFormat::Edifact, None)
+                .await
+                .unwrap();
         });
     });
 }
 
-criterion_group!(benches, bench_process_small_jsonl);
+criterion_group!(benches, bench_process_small_edifact);
 criterion_main!(benches);

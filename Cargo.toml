@@ -27,7 +27,7 @@ bb8 = "0.9.1"
 bb8-tiberius = "0.16.0"
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = { version = "0.5", features = ["async_tokio"] }
 
 [[bench]]
 name = "processing_bench"

@@ -1,70 +1,98 @@
-# filereduce
+# FileReduce
 
-Motor de procesamiento de datos de alto rendimiento para archivos EDIFACT, XML y JSON con capacidad de consultas SQL-like.
+Procesador de archivos de gran volumen (EDIFACT, XML, JSONL) optimizado para alto rendimiento y conversión a estructuras de datos modernas. Diseñado para integración directa con bases de datos SQL Server y flujos de trabajo de datos masivos.
 
-## Características
+## 🚀 Instalación
 
-- **Streaming de memoria constante**: Procesamiento de archivos de cualquier tamaño sin cargar todo en memoria
-- **Multi-formato**: Soporte para EDIFACT, XML y JSON/JSONL
-- **Motor de consultas SQL-like**:
-  - SELECT con proyección de campos
-  - WHERE con operadores: =, >, <, >=, <=, LIKE, IN, BETWEEN
-  - Lógicos: AND, OR, NOT
-  - ORDER BY con ASC/DESC
-  - LIMIT para control de resultados
-  - **Agregaciones**: COUNT, SUM, AVG, MIN, MAX
-- **Salida**: JSONL (JSON Lines) optimizado
-- **CLI completa**: Interface de línea de comandos con clap
-
-## Instalación
+Para instalar la herramienta globalmente en tu sistema desde el código fuente:
 
 ```bash
+# Navega al directorio del proyecto
+cd filereduce
+
+# Instala el binario en tu PATH
 cargo install --path .
 ```
 
-## Uso
+*Asegúrate de tener Rust instalado y el directorio de binarios de cargo en tu PATH.*
 
-### Procesar archivos
+---
 
-```bash
-# Procesar archivo EDIFACT
-filereduce process input.edifact output.jsonl
+## 🛠️ Uso y Comandos
 
-# Procesar archivo XML
-filereduce process input.xml output.jsonl
+### 1. Ingesta a SQL Server (`insert`)
 
-# Procesar archivo JSONL
-filereduce process input.jsonl output.jsonl
+Carga archivos EDIFACT directamente a tu base de datos utilizando un procedimiento almacenado configurable. Soporta cargas masivas (batching) y transacciones.
 
-# Especificar formato
-filereduce process data.txt output.jsonl --format xml
-
-# Procesar con filtrado (SQL-like)
-filereduce process input.edifact output.jsonl --query "qty > 5 AND sku LIKE 'SKU%'"
+**Configuración (`config.yaml`)**
+```yaml
+ingest:
+  connection_string: "server=tcp:myserver.database.windows.net,1433;database=myDB;user=user;password=pass;encrypt=true;trustServerCertificate=true;"
+  procedure_name: "sp_EDI_Ingresar_Batch_Orders"
+  json_param: "@JsonBatch"
+  batch_size: 1000
 ```
 
-# Consulta simple
+#### Windows (PowerShell)
+```powershell
+filereduce insert --config config.yaml input.edifact
+```
 
-CONSULTAS PROBADAS
-filereduce process sample.jsonl out_json_filtered.jsonl --query "number = 'ORDER001'"
+#### Linux / macOS (Bash)
+```bash
+filereduce insert --config config.yaml input.edifact
+```
 
-filereduce process sample.xml out_xml_filtered.jsonl --query "number = 'ORDER001'"
+---
 
-filereduce process sample.edifact out_edifact_filtered.jsonl --query "number = 'ORDER001'"
+### 2. Procesamiento a Archivo (`process`)
 
-filereduce process sample.edifact output2.jsonl --query "number LIKE '%ORDER001%' AND sku LIKE 'SKU00%'"
-- Conversión automática a JSON estructurado
+Convierte archivos EDIFACT a formato JSONL (JSON Lines) para análisis local o ingestión en otros sistemas (BigQuery, etc.).
 
-### XML
-- Elementos: `<record>`, `<item>`, `<row>`
-- Streaming con eventos XML
+#### Windows (PowerShell)
+```powershell
+# Proceso simple
+filereduce process input.edifact output.jsonl -f edifact
 
-### JSON/JSONL
-- JSON Lines (un objeto JSON por línea)
-- JSON arrays (convertidos a líneas)
-- Normalización automática (elimina campos null)
+# Con filtro de consulta (SQL-like)
+filereduce process input.edifact output_filtered.jsonl -f edifact -q "doc_type = 'ORDERS' AND qty > 100"
+```
 
-## Estructura de proyecto
+#### Linux / macOS (Bash)
+```bash
+# Proceso simple
+filereduce process input.edifact output.jsonl -f edifact
+
+# Con filtro de consulta (SQL-like)
+filereduce process input.edifact output_filtered.jsonl -f edifact -q "doc_type = 'ORDERS' AND qty > 100"
+```
+
+---
+
+### 3. Conversión de Formatos (`convert`)
+
+Utilidad rápida para transformar entre formatos soportados.
+
+#### Windows (PowerShell)
+```powershell
+filereduce convert input.xml output.json --from xml --to json
+```
+
+#### Linux / macOS (Bash)
+```bash
+filereduce convert input.xml output.json --from xml --to json
+```
+
+---
+
+## 🏗️ Desarrollo
+
+Para ejecutar pruebas de integración y verificar el funcionamiento localmente:
+
+**Windows / Linux / macOS**
+```bash
+cargo test
+```
 
 ```
 filereduce/

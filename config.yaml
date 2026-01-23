@@ -1,0 +1,5 @@
+ingest:
+  connection_string: "server=tcp:sd4n3tbmvc.database.windows.net,1433;database=db_Abastecimientos_Pruebas;user=movinova;password=movi1111@;encrypt=true;trustServerCertificate=true;"
+  procedure_name: "sp_EDI_Ingresar_Batch_Orders"
+  json_param: "@JsonBatch"
+  batch_size: 1000
