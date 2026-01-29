@@ -1,1 +1,0 @@
-{"interchange_id":"12345","sender":"SENDERID","receiver":"RECEIVERID","doc_type":"ORDERS","document_number":"DOC123","document_date":"20260122","requested_delivery_date":"20260201","buyer":"BUYER001","seller":"SELLER001","line_count_check":1,"lines":[{"sku":"PRODUCT123","qty":10.0,"amount":500.0}]}

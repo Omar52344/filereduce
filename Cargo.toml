@@ -25,6 +25,8 @@ async-trait = "0.1.89"
 futures = "0.3.31"
 bb8 = "0.9.1"
 bb8-tiberius = "0.16.0"
+filereducelib = { path = "filereducelib" }
+
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["async_tokio"] }

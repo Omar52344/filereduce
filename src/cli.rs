@@ -26,6 +26,9 @@ pub enum Commands {
 
         #[arg(short, long, default_value_t = 10000)]
         limit: usize,
+
+        #[arg(long)]
+        fra: bool,
     },
 
     Query {
@@ -52,5 +55,8 @@ pub enum Commands {
         input: PathBuf,
         #[arg(short, long)]
         config: PathBuf,
+
+        #[arg(long)]
+        fra: bool,
     },
 }

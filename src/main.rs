@@ -21,6 +21,7 @@ async fn main() -> Result<()> {
             format,
             query,
             limit: _,
+            fra,
         } => {
             let input_file = File::open(&input)?;
             let output_file = File::create(&output)?;
@@ -48,9 +49,22 @@ async fn main() -> Result<()> {
             sink.flush().await?;
 
             println!("Processed {} to {}", input.display(), output.display());
+
+            if fra {
+                println!("Compressing to .fra...");
+                let input_jsonl = File::open(&output)?;
+                let fra_path = output.with_extension("fra");
+                let output_fra = File::create(&fra_path)?;
+
+                let mut compressor = filereducelib::FileReduceCompressor::new();
+                compressor
+                    .compress(input_jsonl, output_fra)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                println!("Compressed to {}", fra_path.display());
+            }
         }
 
-        Commands::Insert { input, config } => {
+        Commands::Insert { input, config, fra } => {
             let config_content = std::fs::read_to_string(&config)?;
             let ingest_config: filereduce::config::IngestConfig =
                 serde_yaml::from_str(&config_content)
@@ -68,6 +82,39 @@ async fn main() -> Result<()> {
             )
             .await?;
             sink.flush().await?;
+
+            if fra {
+                println!("Generating optional .fra output...");
+                let temp_path = input.with_extension("tmp.jsonl");
+
+                {
+                    let temp_file = File::create(&temp_path)?;
+                    let mut temp_sink =
+                        filereduce::sink::file::FileDataSink::new(BufWriter::new(temp_file));
+                    let input_file_2 = File::open(&input)?;
+
+                    process(
+                        BufReader::new(input_file_2),
+                        &mut temp_sink,
+                        FileFormat::Edifact,
+                        None,
+                    )
+                    .await?;
+                    temp_sink.flush().await?;
+                }
+
+                let fra_path = input.with_extension("fra");
+                let input_jsonl = File::open(&temp_path)?;
+                let output_fra = File::create(&fra_path)?;
+
+                let mut compressor = filereducelib::FileReduceCompressor::new();
+                compressor
+                    .compress(input_jsonl, output_fra)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+                std::fs::remove_file(temp_path)?;
+                println!("Compressed to {}", fra_path.display());
+            }
         }
 
         Commands::Query {

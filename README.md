@@ -41,6 +41,9 @@ filereduce insert --config config.yaml input.edifact
 #### Linux / macOS (Bash)
 ```bash
 filereduce insert --config config.yaml input.edifact
+
+# Generar backup comprimido .fra
+filereduce insert --config config.yaml input.edifact --fra
 ```
 
 ---
@@ -64,7 +67,11 @@ filereduce process input.edifact output_filtered.jsonl -f edifact -q "doc_type =
 filereduce process input.edifact output.jsonl -f edifact
 
 # Con filtro de consulta (SQL-like)
+# Con filtro de consulta (SQL-like)
 filereduce process input.edifact output_filtered.jsonl -f edifact -q "doc_type = 'ORDERS' AND qty > 100"
+
+# Comprimir resultado a .fra
+filereduce process input.edifact output.jsonl --fra
 ```
 
 ---
@@ -201,7 +208,7 @@ Procesamiento típico:
 - [ ] Parser SQL completo con JOIN
 - [ ] Agregaciones en CLI
 - [ ] Paralelización de procesamiento
-- [ ] Compresión de salida
+- [x] Compresión de salida (.fra)
 - [ ] Soporte para CSV
 - [ ] Soporte para otros formatos EDI
 - [ ] Streaming HTTP
