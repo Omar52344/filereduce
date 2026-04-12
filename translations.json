@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "metadata": {
+    "last_updated": "2026-04-12",
+    "description": "Diccionario dinámico de mapeo EDIFACT a JSON Semántico"
+  },
+  "segments": {
+    "BGM": {
+      "label": "DocumentHeader",
+      "elements": {
+        "1": "MessageName",
+        "2": "DocumentNumber",
+        "3": "MessageFunction"
+      }
+    },
+    "DTM": {
+      "label": "DateTimeReference",
+      "use_qualifier": true,
+      "qualifiers": {
+        "137": {
+          "label": "DocumentDate",
+          "elements": { "1": "Value", "2": "Format" }
+        },
+        "2": {
+          "label": "DeliveryDate",
+          "elements": { "1": "Value" }
+        }
+      }
+    },
+    "NAD": {
+      "label": "PartyInformation",
+      "use_qualifier": true,
+      "qualifiers": {
+        "BY": {
+          "label": "Buyer",
+          "elements": {
+            "1": "PartyId",
+            "2": "InternalCode",
+            "3": "PartyName"
+          }
+        },
+        "SU": {
+          "label": "Supplier",
+          "elements": {
+            "1": "PartyId",
+            "3": "SupplierName"
+          }
+        }
+      }
+    },
+    "LIN": {
+      "label": "LineItem",
+      "elements": {
+        "1": "LineNumber",
+        "2": "ActionCode",
+        "3": {
+          "label": "ProductIdentification",
+          "components": {
+            "1": "ProductId",
+            "2": "Type"
+          }
+        }
+      }
+    }
+  }
+}

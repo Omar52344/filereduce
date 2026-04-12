@@ -18,7 +18,7 @@ desarrollar un front drag and drop que consuma el wasm o el enpoint rest o que a
 🚀 Hito 1: El Motor Dinámico (Rust Core Refactor)
 Objetivo: Eliminar el código "quemado" y permitir que la lógica dependa de metadatos externos.
 
-Task 1.1: Definición del Schema de Traducción. Diseñar el translations.json que soporte segmentos, sub-elementos y nombres legibles (Labels).
+Task 1.1: Definición del Schema de Traducción. Diseñar el translations.json que soporte segmentos, sub-elementos y nombres legibles (Labels). ya esta diseñado en el archivo translations.json y translations.rs en el repo
 
 Task 1.2: Registro de Mapeo (Registry Pattern). Crear un HashMap global en Rust que cargue el JSON y sirva como fuente de verdad para el parser.
 
