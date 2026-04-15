@@ -1,7 +1,7 @@
 use super::{DataSink, SinkItem};
 use crate::config::IngestSection;
 use crate::error::Result;
-use crate::processor::StreamingDocument;
+use crate::model::streaming::StreamingDocument;
 use async_trait::async_trait;
 use bb8::Pool;
 use bb8_tiberius::ConnectionManager;

@@ -9,24 +9,94 @@ keywords = ["edifact", "xml", "json", "jsonl"]
 categories = ["development-tools", "file-processing", "data-processing"]
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
-engine_filereduce = { path = "engine_filereduce" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-quick-xml = "0.36"
-tokio = { version = "1.49.0", features = ["full"] }
-tiberius = "0.12.3"
-tokio-util = "0.7.18"
-serde_yaml = "0.9.34"
-async-trait = "0.1.89"
-futures = "0.3.31"
-bb8 = "0.9.1"
-bb8-tiberius = "0.16.0"
 filereducelib = { path = "filereducelib" }
 
+[features]
+default = ["full"]
+full = [
+    "clap", 
+    "engine_filereduce", 
+    "tracing", 
+    "tracing-subscriber", 
+    "quick-xml", 
+    "tokio", 
+    "tiberius", 
+    "tokio-util", 
+    "serde_yaml", 
+    "async-trait", 
+    "futures", 
+    "bb8", 
+    "bb8-tiberius"
+]
+core = []
+cli = ["clap", "engine_filereduce", "tracing", "tracing-subscriber", "quick-xml", "tokio", "serde_yaml", "async-trait", "futures"]
+db = ["tiberius", "bb8", "bb8-tiberius", "tokio-util"]
+api = ["warp", "bytes", "full"]
+
+[dependencies.clap]
+version = "4.5"
+features = ["derive"]
+optional = true
+
+[dependencies.engine_filereduce]
+path = "engine_filereduce"
+optional = true
+
+[dependencies.tracing]
+version = "0.1"
+optional = true
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+optional = true
+
+[dependencies.quick-xml]
+version = "0.36"
+optional = true
+
+[dependencies.tokio]
+version = "1.49.0"
+features = ["full"]
+optional = true
+
+[dependencies.tiberius]
+version = "0.12.3"
+optional = true
+
+[dependencies.tokio-util]
+version = "0.7.18"
+optional = true
+
+[dependencies.serde_yaml]
+version = "0.9.34"
+optional = true
+
+[dependencies.async-trait]
+version = "0.1.89"
+optional = true
+
+[dependencies.futures]
+version = "0.3.31"
+optional = true
+
+[dependencies.bb8]
+version = "0.9.1"
+optional = true
+
+[dependencies.bb8-tiberius]
+version = "0.16.0"
+optional = true
+
+[dependencies.warp]
+version = "0.3"
+optional = true
+
+[dependencies.bytes]
+version = "1"
+optional = true
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["async_tokio"] }
@@ -38,3 +108,8 @@ harness = false
 [[bench]]
 name = "query_bench"
 harness = false
+
+[[bin]]
+name = "api"
+path = "src/bin/api.rs"
+required-features = ["api"]

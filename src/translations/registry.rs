@@ -65,6 +65,15 @@ impl TranslationRegistry {
     }
 }
 
+impl Clone for TranslationRegistry {
+    fn clone(&self) -> Self {
+        let config = self.config.read().unwrap().clone();
+        Self {
+            config: RwLock::new(config),
+        }
+    }
+}
+
 impl Default for TranslationRegistry {
     fn default() -> Self {
         Self::new().expect("Failed to load default translation config")

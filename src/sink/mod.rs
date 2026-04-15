@@ -2,7 +2,7 @@ pub mod db;
 pub mod file;
 
 use crate::error::Result;
-use crate::processor::StreamingDocument;
+use crate::model::streaming::StreamingDocument;
 use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::Value;

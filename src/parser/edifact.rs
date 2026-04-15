@@ -1,6 +1,6 @@
 use super::segment::Segment;
 use super::tokenizer::tokenize_segment;
-use crate::translations::{SegmentConfig, TranslationRegistry};
+use crate::translations::TranslationRegistry;
 
 pub fn parse_segment<'a>(raw: &'a str) -> Segment<'a> {
     parse_segment_with_registry(raw, None)
@@ -120,8 +120,8 @@ mod tests {
                 assert_eq!(qualifier, None);
                 // elements should contain the two values
                 assert_eq!(elements.len(), 2);
-                assert_eq!(elements[0], "220");
-                assert_eq!(elements[1], "12345");
+                assert_eq!(elements[0][0], "220");
+                assert_eq!(elements[1][0], "12345");
             }
             _ => panic!("Expected Dynamic segment, got {:?}", seg),
         }
@@ -137,7 +137,7 @@ mod tests {
                 assert_eq!(code, "DTM");
                 assert_eq!(qualifier, Some("137"));
                 assert_eq!(elements.len(), 1);
-                assert_eq!(elements[0], "20240414");
+                assert_eq!(elements[0][0], "20240414");
             }
             _ => panic!("Expected Dynamic segment, got {:?}", seg),
         }
