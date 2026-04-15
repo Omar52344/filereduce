@@ -3,6 +3,7 @@ pub mod config;
 pub mod error;
 pub mod processor;
 pub mod sink;
+pub mod translations;
 
 pub mod model {
     pub mod document;

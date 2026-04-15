@@ -1,66 +1,75 @@
-resumen de lo que se quiere para filereduce:
+🗺️ Roadmap de FileReduce: Del Motor al SaaS de Big Data
 
-revisar el manejador o procesador de elemento de filereduce para edifact ya que este espera siempre unas secciones edifact quemadas, seria ideal tener una opcion de que se puedan automaticamente
-generar secciones nuevas del edifact sin necesidad de quemarlas en el codigo y que tambien el json de salida tambien sea dinamico, es decir tener un diccionario de traduccion de etiquetas edifact autoalimentable y dinamico (se podria crear un json de traducciones donde se defina "valueEdifact:"","valueJon:""") este json seria un estatico que se modifica a demanda por otro servicios
+Este documento detalla la ruta crítica para transformar el motor estático de FileReduce en un ecosistema dinámico, impulsado por IA y optimizado para el procesamiento masivo de datos comerciales (EDIFACT/JSONL).
 
-y podamos usar ese json como un libreria dinamica que se pueda alimentar de forma diferente sea manual o por otro servicio que traduzca con ia y identifique etiquetas nuevas previamente para poderlas traducir antes de hacer la conversion del archivo para con ellos automatizar el proceso de agregar etiquetas nuevas
-
-
-el metodo de import export edifact se debe pensar para exponer como un metodo
-que se va a volver wasm para poderlo usar en la web, comtemplando esta librearia JSOn de etiquetas de traduccion
-
-
-desarrollar un front drag and drop que consuma el wasm o el enpoint rest o que arquitectura manejar para consumir estos servicios de compresion seria la mejor para poder usar ese dinamismo, 
-
-
-
-🗺️ Roadmap de FileReduce: Del Motor al SaaS
 🚀 Hito 1: El Motor Dinámico (Rust Core Refactor)
-Objetivo: Eliminar el código "quemado" y permitir que la lógica dependa de metadatos externos.
 
-Task 1.1: Definición del Schema de Traducción. Diseñar el translations.json que soporte segmentos, sub-elementos y nombres legibles (Labels). ya esta diseñado en el archivo translations.json y translations.rs en el repo
+Objetivo: Eliminar el código "quemado" y permitir que la lógica de conversión dependa totalmente de metadatos externos y dinámicos.
 
-Task 1.2: Registro de Mapeo (Registry Pattern). Crear un HashMap global en Rust que cargue el JSON y sirva como fuente de verdad para el parser.
+Task 1.1: Consolidación del Schema de Traducción. * Validar y extender translations.json (ya diseñado) para soportar estructuras de "Loops" y grupos repetitivos.
 
-Task 1.3: Refactorización del Parser EDIFACT. Reemplazar los match estáticos por una función de búsqueda (lookup) que consulte el Registro.
+Sincronizar el struct en translations.rs para asegurar una deserialización perfecta.
 
-Task 1.4: Manejador de "Unknown Tags". Implementar un sistema de eventos que capture segmentos no encontrados y los guarde en un log para posterior análisis.
+Task 1.2: Implementación del Registro de Mapeo (Registry Pattern). * Crear un HashMap global o thread-safe (Arc<Mutex<>>) que cargue el JSON y sirva como fuente única de verdad para el parser.
 
-Task 1.5: Unit Testing Dinámico. Crear tests donde se pase un archivo EDIFACT y un JSON de mapeo diferente para asegurar que el output cambie sin tocar el binario.
+Task 1.3: Refactorización del Parser EDIFACT. * Migrar la lógica de main.rs para que las secciones no sean match estáticos, sino búsquedas dinámicas en el Registro.
+
+Task 1.4: Sistema de Telemetría de Etiquetas Desconocidas. * Implementar un canal de captura para segmentos no mapeados que genere reportes automáticos para el Hito 4 (IA).
+
+Task 1.5: Batería de Tests Dinámicos. * Pruebas unitarias que validen la conversión de un mismo archivo EDIFACT usando diferentes versiones de translations.json para verificar el dinamismo.
 
 🌐 Hito 2: Portabilidad y WebAssembly (WASM)
-Objetivo: Llevar la potencia de Rust al navegador para el Demo Web.
 
-Task 2.1: Integración de wasm-bindgen. Exponer los métodos de conversión (process_edifact) y compresión (filereducelib) para JavaScript.
+Objetivo: Llevar la potencia de procesamiento al navegador y exponer la lógica mediante servicios distribuidos.
 
-Task 2.2: Optimización de Binario WASM. Configurar wasm-opt para reducir el tamaño del paquete y asegurar una carga rápida en la web.
+Task 2.1: Exportación a WASM con wasm-bindgen. * Encapsular el método process de main.rs para ser consumido desde JavaScript.
 
-Task 2.3: Bridge de Datos. Implementar la transferencia eficiente de grandes archivos (Uint8Array) entre JS y Rust evitando copias innecesarias de memoria.
+Task 2.2: Implementación de la API de 4 Endpoints (REST).
 
-Task 2.4: Wrapper de Diccionario en Web. Crear la lógica para que el WASM pueda recibir el JSON de traducciones actualizado desde una URL externa.
+POST /convert/edi-to-json: Conversión directa usando el motor dinámico.
+
+POST /convert/json-to-edi: Reconstrucción de archivos EDIFACT a partir de JSONL.
+
+POST /compress/to-fra: Ejecución de la librería filereducelib para generar backups .fra.
+
+POST /decompress/from-fra: Restauración de archivos .fra a JSONL original.
+
+Task 2.3: Bridge de Datos y Memoria. * Optimizar el paso de archivos Uint8Array entre JS y el runtime de WASM para evitar cuellos de botella en archivos de más de 100MB.
+
+Task 2.4: Hot-Reload de Traducciones en Cliente. * Lógica para que el WASM refresque su diccionario local si se detecta una actualización en el servidor central.
 
 🎨 Hito 3: Frontend de Impacto (Next.js + Drag & Drop)
-Objetivo: Crear el "Efecto Wow" para el cliente con valor inmediato visible.
 
-Task 3.1: Interface "Dropzone". Desarrollar el área de carga de archivos con feedback visual de progreso.
+Objetivo: Crear una interfaz que demuestre el valor inmediato ("Efecto Wow") permitiendo al usuario ver sus datos de forma legible.
 
-Task 3.2: Web Worker Orchestration. Configurar un Worker de JS para que el WASM procese archivos pesados en un hilo separado (sin congelar la UI).
+Task 3.1: Interface de Carga Inteligente. * Desarrollar un componente de "Drag & Drop" con pre-validación de formato de archivo.
 
-Task 3.3: Data Grid Legible (TanStack Table). Renderizar el JSON resultante en una tabla con nombres humanos (ej: "Número de Orden" en lugar de "BGM+102").
+Task 3.2: Orquestación con Web Workers. * Asegurar que el pesado proceso de conversión en WASM ocurra en un hilo separado de la UI para mantener una experiencia fluida.
 
-Task 3.4: Widget de Ahorro .fra. Implementar un comparador visual que muestre la reducción de tamaño entre el original y el comprimido.
+Task 3.3: Data Grid Semántico (Visualización). * Renderizar el resultado en una tabla dinámica (TanStack Table) usando los labels del translations.json.
 
-Task 3.5: Descarga Local. Habilitar la descarga del archivo .jsonl y el backup .fra generado localmente.
+Task 3.4: Dashboard de Ahorro de Almacenamiento. * Widget comparativo: Peso Original vs Peso .fra, con cálculo automático de ahorro porcentual y proyectado a costo en la nube.
+
+Task 3.5: Gestor de Descargas. * Permitir al usuario bajar el JSONL resultante, el reporte de errores y el backup comprimido .fra de forma local.
 
 🧠 Hito 4: Inteligencia y Escalabilidad (The Cloud Brain)
-Objetivo: Automatizar el crecimiento del diccionario y la persistencia.
 
-Task 4.1: API de Reporte de Etiquetas. Crear un endpoint (FastAPI o Rust Axum) que reciba las etiquetas desconocidas enviadas por los clientes.
+Objetivo: Automatizar el mantenimiento del sistema y facilitar la integración empresarial de nivel "Enterprise".
 
-Task 4.2: Integración con IA (Gemini API). Desarrollar el worker que toma etiquetas desconocidas, las analiza con el manual de EDIFACT y sugiere la traducción al administrador.
+Task 4.1: Hub de Aprendizaje de Etiquetas. * Crear el servicio que centraliza los reportes de etiquetas desconocidas capturados en el Hito 1.
 
-Task 4.3: Global Dictionary Sync. Implementar un sistema de caché (Redis o similar) para que todos los clientes reciban las nuevas traducciones en tiempo real.
+Task 4.2: Integración de IA SRE (Gemini API). * Implementar el agente que analiza etiquetas nuevas contra manuales estándar de la ONU/EDIFACT y sugiere la traducción al translations.json automáticamente.
 
-Task 4.4: Conector SQL Server (Pro). Desarrollar el módulo que toma el output del WASM y genera los scripts de inserción optimizados para la base de datos del cliente.
+Task 4.3: Sincronización Global de Diccionarios. * Implementar un sistema de distribución (CDN o Cache) para que las actualizaciones aprobadas por la IA lleguen instantáneamente a todos los clientes.
 
+Task 4.4: Conector SQL Server (Pro). * Desarrollar el generador de esquemas SQL dinámicos basado en el JSONL para la inyección directa de datos a bases de datos empresariales.
 
+📊 Definición de Éxito (KPIs)
+
+Reducción de Código: Eliminar el 90% de los match estáticos en el parser.
+
+Rendimiento: Conversión de 100MB de EDIFACT a JSONL en menos de 5 segundos en el navegador.
+
+Compresión: Mantener ratios de ahorro superiores al 95% usando el formato .fra.
+
+Autonomía: El sistema debe ser capaz de auto-proponer traducciones para el 80% de las etiquetas nuevas encontradas.

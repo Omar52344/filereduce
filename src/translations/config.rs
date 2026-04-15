@@ -1,20 +1,20 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TranslationConfig {
     pub version: String,
     pub metadata: Metadata,
     pub segments: HashMap<String, SegmentConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Metadata {
     pub last_updated: String,
     pub description: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SegmentConfig {
     pub label: String,
     #[serde(default)]
@@ -25,14 +25,14 @@ pub struct SegmentConfig {
     pub elements: HashMap<String, ElementConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SubSegmentConfig {
     pub label: String,
     #[serde(default)]
     pub elements: HashMap<String, ElementConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ElementConfig {
     Simple(String),

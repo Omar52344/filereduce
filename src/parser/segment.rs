@@ -12,5 +12,10 @@ pub enum Segment<'a> {
     CUX(&'a str),
     UNT,
     UNZ,
+    Dynamic {
+        code: &'a str,
+        qualifier: Option<&'a str>,
+        elements: Vec<Vec<&'a str>>,
+    },
     Unknown(&'a str),
 }
