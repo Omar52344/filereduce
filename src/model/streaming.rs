@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct StreamingDocument {
     pub interchange_id: String,
     pub sender: String,
@@ -39,7 +39,7 @@ impl Default for StreamingDocument {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct StreamingLine {
     pub line_no: u64,
     pub sku: String,

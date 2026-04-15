@@ -18,6 +18,13 @@ Task 1.4: Sistema de Telemetría de Etiquetas Desconocidas. * Implementar un can
 
 Task 1.5: Batería de Tests Dinámicos. * Pruebas unitarias que validen la conversión de un mismo archivo EDIFACT usando diferentes versiones de translations.json para verificar el dinamismo.
 
+**Estado Hito 1: ✅ COMPLETADO**
+- ✅ Task 1.1: Schema de traducciones consolidado en `src/translations/config.rs`.
+- ✅ Task 1.2: `TranslationRegistry` implementado en `src/translations/registry.rs`.
+- ✅ Task 1.3: Parser EDIFACT refactorizado (`src/parser/edifact.rs`) con soporte dinámico.
+- ✅ Task 1.4: Telemetría de segmentos desconocidos mediante `tracing::warn!`.
+- ✅ Task 1.5: Tests dinámicos pasan (`cargo test`).
+
 🌐 Hito 2: Portabilidad y WebAssembly (WASM)
 
 Objetivo: Llevar la potencia de procesamiento al navegador y exponer la lógica mediante servicios distribuidos.
@@ -38,6 +45,16 @@ Task 2.3: Bridge de Datos y Memoria. * Optimizar el paso de archivos Uint8Array 
 
 Task 2.4: Hot-Reload de Traducciones en Cliente. * Lógica para que el WASM refresque su diccionario local si se detecta una actualización en el servidor central.
 
+**Estado Hito 2: 🚧 EN PROGRESO**
+- ✅ Task 2.1: Crate WASM creada (`wasm/`) con `wasm-bindgen` (compilación pendiente de `clang`).
+- ✅ Task 2.2: API REST implementada (`src/bin/api.rs`):
+  - ✅ `POST /process/edifact` (conversión EDIFACT → JSONL).
+  - ✅ `POST /process/jsonl` (compresión JSONL → .fra).
+  - ✅ `POST /decompress/fra` (descompresión .fra → JSONL) – *implementado*.
+  - ✅ `POST /convert/json-to-edi` (reconstrucción EDIFACT) – *implementado (serialización básica)*.
+- 🔄 Task 2.3: Bridge de Datos y Memoria – *pendiente*.
+- 🔄 Task 2.4: Hot-Reload de Traducciones – *pendiente*.
+
 🎨 Hito 3: Frontend de Impacto (Next.js + Drag & Drop)
 
 Objetivo: Crear una interfaz que demuestre el valor inmediato ("Efecto Wow") permitiendo al usuario ver sus datos de forma legible.
@@ -52,6 +69,13 @@ Task 3.4: Dashboard de Ahorro de Almacenamiento. * Widget comparativo: Peso Orig
 
 Task 3.5: Gestor de Descargas. * Permitir al usuario bajar el JSONL resultante, el reporte de errores y el backup comprimido .fra de forma local.
 
+**Estado Hito 3: 🚧 EN PROGRESO**
+- ✅ Task 3.1: Interface de Carga Inteligente – componente Drag & Drop implementado (`components/FileUpload.tsx`) con pre‑validación de formatos.
+- 🔄 Task 3.2: Orquestación con Web Workers – *pendiente* (requiere módulo WASM compilado).
+- ✅ Task 3.3: Data Grid Semántico – componente `DataGrid.tsx` implementado con TanStack Table, muestra documentos EDIFACT convertidos.
+- ✅ Task 3.4: Dashboard de Ahorro – componente `Dashboard.tsx` implementado con métricas de tamaño, porcentaje de ahorro y costo proyectado en la nube.
+- ✅ Task 3.5: Gestor de Descargas – soporta descarga de JSONL, CSV y archivos .fra según el tipo de procesamiento.
+
 🧠 Hito 4: Inteligencia y Escalabilidad (The Cloud Brain)
 
 Objetivo: Automatizar el mantenimiento del sistema y facilitar la integración empresarial de nivel "Enterprise".
@@ -63,6 +87,9 @@ Task 4.2: Integración de IA SRE (Gemini API). * Implementar el agente que anali
 Task 4.3: Sincronización Global de Diccionarios. * Implementar un sistema de distribución (CDN o Cache) para que las actualizaciones aprobadas por la IA lleguen instantáneamente a todos los clientes.
 
 Task 4.4: Conector SQL Server (Pro). * Desarrollar el generador de esquemas SQL dinámicos basado en el JSONL para la inyección directa de datos a bases de datos empresariales.
+
+**Estado Hito 4: ⏳ PENDIENTE**
+- Todas las tareas de inteligencia y escalabilidad están pendientes.
 
 📊 Definición de Éxito (KPIs)
 
