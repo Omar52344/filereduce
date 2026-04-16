@@ -1,7 +1,9 @@
 use crate::error::{FileReduceError, Result};
 use crate::translations::config::*;
+use std::env;
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 use std::sync::RwLock;
 
 #[derive(Debug)]
@@ -31,6 +33,53 @@ impl TranslationRegistry {
     pub fn from_version(version: &str) -> Result<Self> {
         let path = format!("standards/{}.json", version);
         Self::from_file(path)
+    }
+
+    /// Load translation configuration for a specific EDIFACT version, scraping if missing.
+    /// Looks for file at `standards/{version}.json` relative to current directory.
+    /// If file does not exist, attempts to run the scraper binary to generate it.
+    pub fn from_version_or_scrape(version: &str) -> Result<Self> {
+        let path = format!("standards/{}.json", version);
+        if Path::new(&path).exists() {
+            return Self::from_file(path);
+        }
+        // Attempt to scrape
+        eprintln!(
+            "Translation file for version {} not found, attempting to scrape...",
+            version
+        );
+        let scraper_bin_candidates = vec![
+            "filereduce-scraper".to_string(),
+            "./scraper/target/release/filereduce-scraper".to_string(),
+            "./target/release/filereduce-scraper".to_string(),
+            "../target/release/filereduce-scraper".to_string(),
+        ];
+        let mut last_error = None;
+        for bin in scraper_bin_candidates {
+            match Command::new(&bin).arg(version).arg("standards").output() {
+                Ok(output) if output.status.success() => {
+                    // success, break and load file
+                    return Self::from_file(path);
+                }
+                Ok(output) => {
+                    // scraper ran but failed
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    last_error = Some(format!("Scraper {} failed: {}", bin, stderr));
+                    // continue to next candidate? Probably same error, break.
+                    break;
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                    // try next candidate
+                    continue;
+                }
+                Err(e) => {
+                    return Err(FileReduceError::Io(e));
+                }
+            }
+        }
+        return Err(FileReduceError::Parse(last_error.unwrap_or_else(|| {
+            "Scraper not found and no candidate succeeded".to_string()
+        })));
     }
 
     fn load_default() -> Result<TranslationConfig> {

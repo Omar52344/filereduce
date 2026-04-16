@@ -35,7 +35,7 @@ impl EdifactProcessor {
     }
 
     fn load_version_registry(&mut self, version: &str) -> Result<()> {
-        match TranslationRegistry::from_version(version) {
+        match TranslationRegistry::from_version_or_scrape(version) {
             Ok(registry) => {
                 self.registry = Some(registry);
                 self.version = Some(version.to_string());
@@ -270,9 +270,13 @@ pub(crate) fn apply_dynamic_segment(
                 }
             }
             ElementConfig::Composite {
-                label: _,
+                label: comp_label,
                 components: comp_map,
             } => {
+                // Also map the composite label to the first component (typical usage)
+                if let Some(&first_value) = components.first() {
+                    field_values.insert(comp_label.clone(), first_value.to_string());
+                }
                 // Map each subcomponent according to comp_map
                 for (sub_pos_str, sub_label) in comp_map.iter() {
                     let sub_pos: usize = sub_pos_str.parse().unwrap_or(0);

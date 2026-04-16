@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TranslationConfig {
     pub version: String,
     pub metadata: Metadata,
-    pub segments: HashMap<String, SegmentConfig>,
+    pub segments: BTreeMap<String, SegmentConfig>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -20,16 +20,16 @@ pub struct SegmentConfig {
     #[serde(default)]
     pub use_qualifier: bool,
     #[serde(default)]
-    pub qualifiers: HashMap<String, SubSegmentConfig>,
+    pub qualifiers: BTreeMap<String, SubSegmentConfig>,
     #[serde(default)]
-    pub elements: HashMap<String, ElementConfig>,
+    pub elements: BTreeMap<String, ElementConfig>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SubSegmentConfig {
     pub label: String,
     #[serde(default)]
-    pub elements: HashMap<String, ElementConfig>,
+    pub elements: BTreeMap<String, ElementConfig>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -38,6 +38,6 @@ pub enum ElementConfig {
     Simple(String),
     Composite {
         label: String,
-        components: HashMap<String, String>,
+        components: BTreeMap<String, String>,
     },
 }
