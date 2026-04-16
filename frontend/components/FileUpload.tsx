@@ -14,6 +14,7 @@ interface ProcessResult {
   processedSize?: number;
   processedData?: any[]; // parsed JSONL documents
   processedBlob?: Blob;
+  processedFraBlob?: Blob;
   fileName?: string;
   fileType: FileType;
   operation: Operation;
@@ -28,6 +29,7 @@ export default function FileUpload() {
   const [error, setError] = useState<string | null>(null);
   const [processingMode, setProcessingMode] = useState<'local' | 'backend'>('local');
   const [workerReady, setWorkerReady] = useState(false);
+  const [alsoCompressToFra, setAlsoCompressToFra] = useState(false);
 
   useEffect(() => {
     const client = getWasmWorkerClient();
@@ -90,9 +92,10 @@ export default function FileUpload() {
         }
       }).filter(obj => obj !== null);
       contentType = 'application/jsonl';
+      processedBlob = new Blob([jsonlBytes.slice()], { type: 'application/jsonl' });
     } else if (fileType === 'jsonl') {
       // Result is .fra (Uint8Array)
-      processedBlob = new Blob([result.data as any], { type: 'application/octet-stream' });
+      processedBlob = new Blob([(result.data as any).slice()], { type: 'application/octet-stream' });
       processedSize = processedBlob.size;
       contentType = 'application/octet-stream';
     }
@@ -190,6 +193,7 @@ export default function FileUpload() {
               return null;
             }
           }).filter(obj => obj !== null);
+          processedBlob = new Blob([text], { type: 'application/jsonl' });
         } else if (contentType.includes('application/octet-stream')) {
           processedBlob = await response.blob();
           processedSize = processedBlob.size;
@@ -208,6 +212,21 @@ export default function FileUpload() {
           operation,
           contentType,
         };
+      }
+
+      // Optional compression to .fra for EDIFACT files
+      if (alsoCompressToFra && fileType === 'edifact' && processedResult.processedBlob) {
+        try {
+          const jsonlBytes = new Uint8Array(await processedResult.processedBlob.arrayBuffer());
+          const client = getWasmWorkerClient();
+          const compressResult = await client.compressJsonl(jsonlBytes);
+          if (compressResult.success && compressResult.data) {
+            processedResult.processedFraBlob = new Blob([compressResult.data.slice()], { type: 'application/octet-stream' });
+          }
+        } catch (err) {
+          console.warn('Failed to compress to .fra:', err);
+          // Continue without .fra blob
+        }
       }
 
       setResult(processedResult);
@@ -241,8 +260,9 @@ export default function FileUpload() {
   };
 
   const handleDownloadFRA = () => {
-    if (!result?.processedBlob) return;
-    downloadFile(result.processedBlob, `${result.fileName || 'output'}.fra`);
+    const blob = result?.processedFraBlob || result?.processedBlob;
+    if (!blob) return;
+    downloadFile(blob, `${result.fileName || 'output'}.fra`);
   };
 
   const handleDownloadCSV = () => {
@@ -332,6 +352,20 @@ export default function FileUpload() {
                 {processingMode === 'local' ? 'Processes files locally in your browser' : 'Sends files to backend server'}
               </div>
             </div>
+            {fileType === 'edifact' && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={alsoCompressToFra}
+                  onChange={(e) => setAlsoCompressToFra(e.target.checked)}
+                  id="compress-to-fra"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="compress-to-fra" className="text-sm text-gray-700 dark:text-gray-300">
+                  Also compress to .fra
+                </label>
+              </div>
+            )}
             <button
               onClick={handleProcess}
               disabled={processing || fileType === 'unknown'}
@@ -393,7 +427,7 @@ export default function FileUpload() {
                   </button>
                 </>
               )}
-              {result.processedBlob && result.contentType?.includes('application/octet-stream') && (
+              {(result.processedFraBlob || (result.processedBlob && result.contentType?.includes('application/octet-stream'))) && (
                 <button
                   onClick={handleDownloadFRA}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"

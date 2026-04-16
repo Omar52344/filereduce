@@ -194,6 +194,28 @@ Sincronización: El proceso de conversión se mantiene en "espera" unos segundos
 - **Generación de JSON**: El scraper produce archivos compatibles con `TranslationConfig` usando `BTreeMap` para orden consistente.
 - **Integración Automática**: `TranslationRegistry::from_version_or_scrape()` detecta archivos faltantes y ejecuta el scraper automáticamente (Zero‑Config).
 
+🎯 Hito 5: Mejoras de Compresión .fra y Experiencia de Usuario
+
+Objetivo: Mejorar el frontend para ofrecer la opción de compresión .fra de manera prominente, modificando el módulo WASM si es necesario, y actualizar la interfaz de usuario para que el usuario pueda descargar el archivo .fra además del output.json como opción adicional.
+
+**Estado Hito 5: ✅ COMPLETADO**
+- ✅ Task 5.1: Mejorar la visibilidad de la opción .fra en el frontend (checkbox añadido).
+- ✅ Task 5.2: Modificar el módulo WASM si es necesario (no requerido).
+- ✅ Task 5.3: Actualizar UI/UX para ofrecer toggle y compresión opcional.
+- ✅ Task 5.4: Actualizar documentación y roadmap.
+- ✅ Task 5.5: Probar el flujo completo.
+
+🧠 Hito 6: Ruta Especializada de Compresión .fra
+
+Objetivo: Crear una nueva ruta en el frontend dedicada exclusivamente a compresión/descompresión .fra ↔ JSONL, separando esta funcionalidad del flujo EDIFACT para mejorar la usabilidad. La ruta validará automáticamente el tipo de archivo (.fra o JSONL) y ofrecerá la conversión correspondiente.
+
+**Estado Hito 6: ✅ COMPLETADO**
+- ✅ Task 6.1: Crear nueva ruta `/compression` en Next.js con página dedicada.
+- ✅ Task 6.2: Implementar componente especializado que valide .fra/JSONL y permita conversión bidireccional.
+- ✅ Task 6.3: Actualizar navegación principal para incluir enlace a la nueva ruta.
+- ✅ Task 6.4: Mantener ruta principal (`/`) para EDIFACT con opción opcional a .fra.
+- ✅ Task 6.5: Probar flujo completo de compresión/descompresión independiente.
+
 📊 Definición de Éxito (KPIs)
 
 Reducción de Código: Eliminar el 90% de los match estáticos en el parser.
@@ -287,7 +309,7 @@ El Hito 4 ha sido **completado exitosamente**, entregando un sistema de detecci�
 
 ## 🎉 **Estado General del Proyecto**
 
-**✅ TODOS LOS HITOS PRINCIPALES COMPLETADOS**
+**✅ TODOS LOS HITOS COMPLETADOS**
 
 | Hito | Estado | Descripción |
 |------|--------|-------------|
@@ -296,6 +318,8 @@ El Hito 4 ha sido **completado exitosamente**, entregando un sistema de detecci�
 | **Hito 3**: Frontend Impacto | ✅ **COMPLETO** | Interfaz Next.js con drag‑drop, DataGrid y Dashboard |
 | **Hito 3.5**: WASM en Frontend | ✅ **COMPLETO** | Web Workers integrados para procesamiento local en navegador |
 | **Hito 4**: Inteligencia de Estándares | ✅ **COMPLETO** | Detección automática de versión y scraping Zero‑Config |
+| **Hito 5**: Mejoras de Compresión .fra | ✅ **COMPLETO** | Mejoras en frontend para opción .fra más prominente y experiencia de usuario |
+| **Hito 6**: Ruta Especializada de Compresión .fra | ✅ **COMPLETO** | Nueva ruta dedicada a compresión/descompresión .fra ↔ JSONL |
 
 ### 🚀 **MVP (Minimum Viable Product) Logrado**
 FileReduce ha alcanzado su **MVP completo** con todas las funcionalidades básicas operativas:
