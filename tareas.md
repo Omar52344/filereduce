@@ -156,11 +156,12 @@ Guardar el resultado en un archivo versionado para evitar scraping redundante en
 
 Sincronización: El proceso de conversión se mantiene en "espera" unos segundos mientras el JSON se genera por primera vez.
 
-**Estado Hito 4: 🔄 EN PROGRESO**
+**Estado Hito 4: ✅ COMPLETADO**
 - ✅ Task 4.1: Detector de Versión implementado en `src/version_detector.rs` y integrado en `EdifactProcessor`.
 - ✅ Task 4.2: Router de Diccionarios básico implementado (`TranslationRegistry::from_version`) que carga archivos desde `standards/{version}.json`.
-- 🔄 Task 4.3: Crawler de Edifactory en desarrollo en directorio `scraper/`.
-- ⏳ Task 4.4: Normalizador y Generador de JSON pendiente.
+- ✅ Task 4.3: Crawler de Edifactory implementado en directorio `scraper/` con scraping real de `https://www.edifactory.de/edifact/`.
+- ✅ Task 4.4: Normalizador y Generador de JSON implementado con función `normalize_element_label()` y mapeos especiales para etiquetas comunes.
+- ✅ **Integración Automática**: Sistema "Zero‑Config" completo con `TranslationRegistry::from_version_or_scrape()` que genera diccionarios faltantes automáticamente.
 
 ### Detalles de Implementación
 
@@ -174,15 +175,24 @@ Sincronización: El proceso de conversión se mantiene en "espera" unos segundos
 - **Fallback**: Si el archivo no existe, se mantiene el diccionario por defecto (o vacío) y se registra advertencia.
 - **Caché**: Los diccionarios cargados se mantienen en memoria para procesamiento posterior.
 
-#### Task 4.3: Crawler de Edifactory (Mock)
-- **Directorio**: `scraper/` con su propio `Cargo.toml` y dependencias (`reqwest`, `scraper`).
-- **Estructura**: `EdifactoryScraper` con método `scrape_version` que actualmente devuelve un mock de configuración.
-- **Uso**: Ejecutar `cargo run --bin filereduce-scraper D96A standards` genera un archivo JSON en `standards/D96A.json`.
-- **Extensible**: La arquitectura permite implementar scraping real contra `https://www.edifactory.de/edifact/`.
+#### Task 4.3: Crawler de Edifactory (Scraper Real)
+- **Directorio**: `scraper/` con su propio `Cargo.toml` y dependencias (`reqwest`, `scraper`, `regex`, `chrono`, `filereduce`).
+- **Estructura**: `EdifactoryScraper` con métodos `scrape_segments`, `scrape_segment`, `scrape_version` que realizan scraping real del sitio web.
+- **Funcionalidad**:
+  - Navega a `https://www.edifactory.de/edifact/directory/{VERSION}/segments` para lista de segmentos.
+  - Para cada segmento, scrapea la página de estructura (`/segment/{CODE}`) y parsea el bloque `pre` con la especificación.
+  - Extrae elementos simples y compuestos (composite elements) con sus componentes.
+- **Uso**: Ejecutar `./scraper/target/release/filereduce-scraper D96A standards` genera un archivo JSON completo en `standards/D96A.json`.
+- **Whitelist**: Scrapea solo segmentos comunes (BGM, DTM, NAD, LIN, etc.) para eficiencia.
 
-#### Task 4.4: Normalizador (Pendiente)
-- **Objetivo**: Transformar datos crudos del scraper al formato `TranslationConfig`.
-- **Próximo paso**: Implementar parsing de tablas HTML y mapeo a segmentos/elementos.
+#### Task 4.4: Normalizador y Generador de JSON
+- **Normalización**: Función `normalize_element_label()` convierte descripciones crudas (ej. "DOCUMENT/MESSAGE NUMBER") a etiquetas estandarizadas (ej. "DocumentNumber").
+- **Mapeos Especiales**: Asignaciones específicas para posiciones conocidas:
+  - BGM posición 2 → "DocumentNumber"
+  - BGM posición 1 → "MessageName"
+  - DTM posición 1 (calificador) → "Value"
+- **Generación de JSON**: El scraper produce archivos compatibles con `TranslationConfig` usando `BTreeMap` para orden consistente.
+- **Integración Automática**: `TranslationRegistry::from_version_or_scrape()` detecta archivos faltantes y ejecuta el scraper automáticamente (Zero‑Config).
 
 📊 Definición de Éxito (KPIs)
 
@@ -203,7 +213,8 @@ Autonomía: El sistema debe ser capaz de auto-proponer traducciones para el 80% 
 - **Módulo WASM** compilado exitosamente (1.4 MB) en `wasm/target/wasm32-unknown-unknown/release/filereduce_wasm.wasm`
 - **Sistema de features** configurado en `Cargo.toml`: `core`, `cli`, `db`, `api`, `full`
 - **Gestión de dependencias** optimizada para reducir tamaño de WASM
-- **Scraper mock** independiente en `scraper/` para generar archivos de traducción versionados
+- **Scraper real** en `scraper/` que genera archivos de traducción versionados automáticamente desde edifactory.de
+- **Sistema Zero‑Config** con detección automática de versión y scraping bajo demanda
 
 ### 🎨 **Frontend (Next.js)**
 - **Componentes principales** implementados: `FileUpload.tsx`, `DataGrid.tsx`, `Dashboard.tsx`
@@ -250,11 +261,22 @@ cargo run --bin filereduce-scraper --manifest-path scraper/Cargo.toml D96A stand
 cd frontend && npm run dev
 ```
 
-## 📊 **Próximos Pasos (Hito 4)**
-1. **Task 4.3**: Completar Crawler de Edifactory para extraer documentación de segmentos y elementos.
-2. **Task 4.4**: Implementar Normalizador que transforme datos crudos del scraper al formato TranslationConfig.
-3. **Integración**: Conectar el crawler con el router de diccionarios para generar archivos automáticamente cuando falta una versión.
-4. **Optimización**: Cachear resultados y permitir actualizaciones periódicas.
+## 📊 **Hito 4 Completado – Sistema Zero‑Config Operativo**
+
+El Hito 4 ha sido **completado exitosamente**, entregando un sistema de detección y actualización automática de estándares EDIFACT. Las funcionalidades implementadas incluyen:
+
+### ✅ **Características Implementadas**
+1. **Detección Automática de Versión**: Identifica la versión EDIFACT (ej. D96A) del segmento UNH.
+2. **Scraping Real de Edifactory**: Extrae estructuras de segmentos y elementos desde `https://www.edifactory.de/edifact/`.
+3. **Normalización Inteligente de Etiquetas**: Convierte descripciones técnicas a nombres semánticos consistentes.
+4. **Generación Automática de Diccionarios**: Crea archivos `standards/{version}.json` compatibles con el sistema de traducción.
+5. **Integración Zero‑Config**: `TranslationRegistry::from_version_or_scrape()` genera diccionarios faltantes automáticamente.
+
+### 🔧 **Mejoras Futuras (Hito 5 – Opcional)**
+1. **Scraping de Códigos de Calificador**: Extraer valores posibles para campos calificados (ej. lista de códigos para DTM qualifier).
+2. **Caché Distribuida**: Almacenar diccionarios generados en un repositorio central para evitar re‑scraping entre instancias.
+3. **Sistema de Actualizaciones Periódicas**: Verificar periódicamente si hay nuevas versiones en edifactory.de.
+4. **Interfaz de Usuario para Overrides**: Permitir a usuarios sobreescribir etiquetas específicas mediante "User Overlay".
 
 ## 🛠️ **Configuración Técnica Revisada**
 - ✅ **WASM**: Compilado sin necesidad de clang (toolchain Rust suficiente)
@@ -262,3 +284,28 @@ cd frontend && npm run dev
 - ✅ **Frontend**: Componentes listos para consumir módulo WASM
 - ✅ **Git**: Configuración adecuada para excluir archivos binarios
 - ✅ **Dependencias**: Versiones compatibles entre `wasm-bindgen`, `js-sys`, `web-sys`
+
+## 🎉 **Estado General del Proyecto**
+
+**✅ TODOS LOS HITOS PRINCIPALES COMPLETADOS**
+
+| Hito | Estado | Descripción |
+|------|--------|-------------|
+| **Hito 1**: Motor Dinámico | ✅ **COMPLETO** | Sistema de traducción completamente dinámico basado en metadatos |
+| **Hito 2**: Portabilidad WASM | ✅ **COMPLETO** | Módulo WebAssembly compilado y API REST funcional |
+| **Hito 3**: Frontend Impacto | ✅ **COMPLETO** | Interfaz Next.js con drag‑drop, DataGrid y Dashboard |
+| **Hito 3.5**: WASM en Frontend | ✅ **COMPLETO** | Web Workers integrados para procesamiento local en navegador |
+| **Hito 4**: Inteligencia de Estándares | ✅ **COMPLETO** | Detección automática de versión y scraping Zero‑Config |
+
+### 🚀 **MVP (Minimum Viable Product) Logrado**
+FileReduce ha alcanzado su **MVP completo** con todas las funcionalidades básicas operativas:
+
+1. **Conversión EDIFACT → JSONL** con diccionarios dinámicos
+2. **Compresión/Descompresión .fra** para ahorro de almacenamiento
+3. **API REST** escalable con procesamiento no bloqueante
+4. **Frontend moderno** con experiencia de usuario fluida
+5. **Procesamiento en navegador** vía WebAssembly
+6. **Sistema Zero‑Config** que detecta versiones EDIFACT y genera diccionarios automáticamente
+
+### 📅 **Última actualización**: 2026‑04‑16
+El proyecto está listo para despliegue en producción y uso continuo.
