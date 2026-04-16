@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import DataGrid from './DataGrid';
 import Dashboard from './Dashboard';
+import { getWasmWorkerClient } from '@/lib/wasmWorker';
 
 type FileType = 'edifact' | 'jsonl' | 'fra' | 'unknown';
 type Operation = 'conversion' | 'compression' | 'decompression';
@@ -25,6 +26,20 @@ export default function FileUpload() {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [processingMode, setProcessingMode] = useState<'local' | 'backend'>('local');
+  const [workerReady, setWorkerReady] = useState(false);
+
+  useEffect(() => {
+    const client = getWasmWorkerClient();
+    const checkReady = () => {
+      if (client.isReady()) {
+        setWorkerReady(true);
+      } else {
+        setTimeout(checkReady, 100);
+      }
+    };
+    checkReady();
+  }, []);
 
   const detectFileType = (filename: string): FileType => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -32,6 +47,66 @@ export default function FileUpload() {
     if (ext === 'jsonl' || ext === 'json') return 'jsonl';
     if (ext === 'fra') return 'fra';
     return 'unknown';
+  };
+
+  const processWithWorker = async (file: File, fileType: FileType): Promise<ProcessResult> => {
+    const client = getWasmWorkerClient();
+    const arrayBuffer = await file.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+
+    let result;
+    if (fileType === 'edifact') {
+      result = await client.processEdifact(data);
+    } else if (fileType === 'jsonl') {
+      result = await client.compressJsonl(data);
+    } else if (fileType === 'fra') {
+      result = await client.decompressFra(data);
+    } else {
+      throw new Error('Unsupported file type');
+    }
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    let processedData: any[] | undefined;
+    let processedBlob: Blob | undefined;
+    let processedSize: number | undefined;
+    let contentType = '';
+
+    if (fileType === 'edifact' || fileType === 'fra') {
+      // Result is JSONL (Uint8Array or string)
+      const jsonlData = result.data;
+      const jsonlBytes = jsonlData instanceof Uint8Array ? jsonlData : new TextEncoder().encode(jsonlData as string);
+      processedSize = jsonlBytes.length;
+      const text = new TextDecoder().decode(jsonlBytes);
+      const lines = text.split('\n').filter(line => line.trim());
+      processedData = lines.map(line => {
+        try {
+          return JSON.parse(line);
+        } catch (e) {
+          console.warn('Failed to parse JSONL line:', line);
+          return null;
+        }
+      }).filter(obj => obj !== null);
+      contentType = 'application/jsonl';
+    } else if (fileType === 'jsonl') {
+      // Result is .fra (Uint8Array)
+      processedBlob = new Blob([result.data as any], { type: 'application/octet-stream' });
+      processedSize = processedBlob.size;
+      contentType = 'application/octet-stream';
+    }
+
+    return {
+      originalSize: file.size,
+      processedSize,
+      processedData,
+      processedBlob,
+      fileName: file.name.replace(/\.[^/.]+$/, ''),
+      fileType,
+      operation: fileType === 'edifact' ? 'conversion' : fileType === 'jsonl' ? 'compression' : 'decompression',
+      contentType,
+    };
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -55,78 +130,87 @@ export default function FileUpload() {
     if (!file) return;
     setProcessing(true);
     setError(null);
-    const formData = new FormData();
-    formData.append('file', file);
 
-    let endpoint = '';
-    let operation: Operation = 'conversion';
-    if (fileType === 'edifact') {
-      endpoint = '/api/process/edifact';
-      operation = 'conversion';
-    } else if (fileType === 'jsonl') {
-      endpoint = '/api/process/jsonl';
-      operation = 'compression';
-    } else if (fileType === 'fra') {
-      endpoint = '/api/decompress/fra';
-      operation = 'decompression';
-    } else {
-      setError('Unsupported file type');
-      setProcessing(false);
-      return;
-    }
+    // Determine processing method
+    const useLocal = processingMode === 'local' && workerReady;
+    let processedResult: ProcessResult;
 
     try {
-      const response = await fetch(`http://localhost:8080${endpoint}`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) {
-        // Try to parse error as JSON, fallback to text
-        try {
-          const err = await response.json();
-          throw new Error(err.error || `HTTP ${response.status}`);
-        } catch {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      }
-
-      const contentType = response.headers.get('content-type') || '';
-      let processedData: any[] | undefined;
-      let processedBlob: Blob | undefined;
-      let processedSize: number | undefined;
-
-      if (contentType.includes('application/jsonl') || contentType.includes('application/json')) {
-        const text = await response.text();
-        processedSize = new TextEncoder().encode(text).length;
-        // Parse JSONL (one JSON object per line)
-        const lines = text.split('\n').filter(line => line.trim());
-        processedData = lines.map(line => {
-          try {
-            return JSON.parse(line);
-          } catch (e) {
-            console.warn('Failed to parse JSONL line:', line);
-            return null;
-          }
-        }).filter(obj => obj !== null);
-      } else if (contentType.includes('application/octet-stream')) {
-        processedBlob = await response.blob();
-        processedSize = processedBlob.size;
+      if (useLocal) {
+        processedResult = await processWithWorker(file, fileType);
       } else {
-        // Fallback: try as blob
-        processedBlob = await response.blob();
-        processedSize = processedBlob.size;
+        // Fallback to backend API
+        const formData = new FormData();
+        formData.append('file', file);
+
+        let endpoint = '';
+        let operation: Operation = 'conversion';
+        if (fileType === 'edifact') {
+          endpoint = '/api/process/edifact';
+          operation = 'conversion';
+        } else if (fileType === 'jsonl') {
+          endpoint = '/api/process/jsonl';
+          operation = 'compression';
+        } else if (fileType === 'fra') {
+          endpoint = '/api/decompress/fra';
+          operation = 'decompression';
+        } else {
+          setError('Unsupported file type');
+          setProcessing(false);
+          return;
+        }
+
+        const response = await fetch(`http://localhost:8080${endpoint}`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) {
+          try {
+            const err = await response.json();
+            throw new Error(err.error || `HTTP ${response.status}`);
+          } catch {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        let processedData: any[] | undefined;
+        let processedBlob: Blob | undefined;
+        let processedSize: number | undefined;
+
+        if (contentType.includes('application/jsonl') || contentType.includes('application/json')) {
+          const text = await response.text();
+          processedSize = new TextEncoder().encode(text).length;
+          const lines = text.split('\n').filter(line => line.trim());
+          processedData = lines.map(line => {
+            try {
+              return JSON.parse(line);
+            } catch (e) {
+              console.warn('Failed to parse JSONL line:', line);
+              return null;
+            }
+          }).filter(obj => obj !== null);
+        } else if (contentType.includes('application/octet-stream')) {
+          processedBlob = await response.blob();
+          processedSize = processedBlob.size;
+        } else {
+          processedBlob = await response.blob();
+          processedSize = processedBlob.size;
+        }
+
+        processedResult = {
+          originalSize: file.size,
+          processedSize,
+          processedData,
+          processedBlob,
+          fileName: file.name.replace(/\.[^/.]+$/, ''),
+          fileType,
+          operation,
+          contentType,
+        };
       }
 
-      setResult({
-        originalSize: file.size,
-        processedSize,
-        processedData,
-        processedBlob,
-        fileName: file.name.replace(/\.[^/.]+$/, ''), // remove extension
-        fileType,
-        operation,
-        contentType,
-      });
+      setResult(processedResult);
     } catch (err: any) {
       setError(err.message || 'Processing failed');
     } finally {
@@ -224,7 +308,30 @@ export default function FileUpload() {
               Remove
             </button>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing Mode:</span>
+                <button
+                  onClick={() => setProcessingMode(mode => mode === 'local' ? 'backend' : 'local')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${processingMode === 'local' ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${processingMode === 'local' ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {processingMode === 'local' ? 'Local (WASM)' : 'Backend (API)'}
+                </span>
+                {processingMode === 'local' && !workerReady && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400">(Worker loading...)</span>
+                )}
+                {processingMode === 'local' && workerReady && (
+                  <span className="text-xs text-green-600 dark:text-green-400">✓ Worker ready</span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {processingMode === 'local' ? 'Processes files locally in your browser' : 'Sends files to backend server'}
+              </div>
+            </div>
             <button
               onClick={handleProcess}
               disabled={processing || fileType === 'unknown'}

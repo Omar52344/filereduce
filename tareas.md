@@ -76,6 +76,37 @@ Task 3.5: Gestor de Descargas. * Permitir al usuario bajar el JSONL resultante, 
 - ✅ Task 3.4: Dashboard de Ahorro – componente `Dashboard.tsx` implementado con métricas de tamaño, porcentaje de ahorro y costo proyectado en la nube.
 - ✅ Task 3.5: Gestor de Descargas – soporta descarga de JSONL, CSV y archivos .fra según el tipo de procesamiento.
 
+## 🖥️ Hito 3.5: Integración WASM en Frontend (Web Workers)
+
+Objetivo: Ejecutar el procesamiento EDIFACT/JSONL directamente en el navegador usando Web Workers y el módulo WASM compilado, eliminando la dependencia del backend para operaciones básicas.
+
+**Estado Hito 3.5: ✅ COMPLETADO**
+
+✅ Task 3.5.1: Copiar módulo WASM a carpeta pública del frontend.
+- **COMPLETADO**: `filereduce_wasm.wasm` y glue `filereduce_wasm.js` copiados a `frontend/public/`
+
+✅ Task 3.5.2: Crear Web Worker (`worker.mjs`) que cargue y utilice el módulo WASM.
+- **COMPLETADO**: Worker ES module creado (`frontend/public/worker.mjs`) con glue de `wasm-bindgen`
+- Implementa carga del WASM mediante `initWasm`
+- Expone funciones: `convert_edi_to_jsonl_simple`, `compress_jsonl_simple`, `decompress_fra_simple`
+- Maneja mensajes entre worker y componente React con transferencia de buffers
+
+✅ Task 3.5.3: Crear hook/cliente para comunicación con el Worker.
+- **COMPLETADO**: Cliente `WasmWorkerClient` implementado en `frontend/lib/wasmWorker.ts`
+- Gestiona estado de carga, errores y terminación del worker
+- Proporciona API: `processEdifact`, `compressJsonl`, `decompressFra`
+
+✅ Task 3.5.4: Integrar Worker en componente `FileUpload.tsx`.
+- **COMPLETADO**: Modificado `handleProcess` para usar worker cuando está disponible (opción local vs backend)
+- Añadido toggle UI para seleccionar modo de procesamiento (local WASM vs API REST)
+- Mantenida compatibilidad con backend para archivos muy grandes
+- Estado del worker visualizado (ready/loading)
+
+✅ Task 3.5.5: Optimizar transferencia de datos entre Worker y UI.
+- **COMPLETADO**: `Transferable` objects implementados en `postMessage` con buffer (evita copias de grandes arrays)
+- Streaming de archivos grandes al worker pendiente (optimización futura)
+- Flujo completo listo para pruebas con archivos de ejemplo
+
 🧠 Hito 4: Inteligencia y Escalabilidad (The Cloud Brain)
 
 Objetivo: Automatizar el mantenimiento del sistema y facilitar la integración empresarial de nivel "Enterprise".
@@ -113,7 +144,8 @@ Autonomía: El sistema debe ser capaz de auto-proponer traducciones para el 80% 
 ### 🎨 **Frontend (Next.js)**
 - **Componentes principales** implementados: `FileUpload.tsx`, `DataGrid.tsx`, `Dashboard.tsx`
 - **Interfaz de usuario** completa con drag & drop, validación de formatos y visualización de datos
-- **Módulo WASM** listo para integración con Web Workers
+- **Módulo WASM integrado con Web Workers** – procesamiento local en el navegador con toggle para seleccionar modo (local vs backend)
+- **Cliente WASM worker** (`wasmWorker.ts`) maneja comunicación y transferencia de buffers eficiente
 
 ### 📁 **Configuración del Proyecto**
 - `.gitignore` actualizado para excluir `wasm/target/` y directorios de compilación
