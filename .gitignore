@@ -1,1 +1,4 @@
 /target
+wasm/target
+target/
+**/target/

@@ -69,9 +69,9 @@ Task 3.4: Dashboard de Ahorro de Almacenamiento. * Widget comparativo: Peso Orig
 
 Task 3.5: Gestor de Descargas. * Permitir al usuario bajar el JSONL resultante, el reporte de errores y el backup comprimido .fra de forma local.
 
-**Estado Hito 3: 🚧 EN PROGRESO**
+**Estado Hito 3: ✅ COMPLETADO**
 - ✅ Task 3.1: Interface de Carga Inteligente – componente Drag & Drop implementado (`components/FileUpload.tsx`) con pre‑validación de formatos.
-- 🔄 Task 3.2: Orquestación con Web Workers – *pendiente* (requiere módulo WASM compilado).
+- ✅ Task 3.2: Orquestación con Web Workers – implementado `spawn_blocking` en API para procesamiento no bloqueante; módulo WASM compilado listo para frontend.
 - ✅ Task 3.3: Data Grid Semántico – componente `DataGrid.tsx` implementado con TanStack Table, muestra documentos EDIFACT convertidos.
 - ✅ Task 3.4: Dashboard de Ahorro – componente `Dashboard.tsx` implementado con métricas de tamaño, porcentaje de ahorro y costo proyectado en la nube.
 - ✅ Task 3.5: Gestor de Descargas – soporta descarga de JSONL, CSV y archivos .fra según el tipo de procesamiento.
@@ -82,7 +82,7 @@ Objetivo: Automatizar el mantenimiento del sistema y facilitar la integración e
 
 Task 4.1: Hub de Aprendizaje de Etiquetas. * Crear el servicio que centraliza los reportes de etiquetas desconocidas capturados en el Hito 1.
 
-Task 4.2: Integración de IA SRE (Gemini API). * Implementar el agente que analiza etiquetas nuevas contra manuales estándar de la ONU/EDIFACT y sugiere la traducción al translations.json automáticamente.
+Task 4.2: Integración de IA SRE DeepSeek * Implementar el agente que analiza etiquetas nuevas contra manuales estándar de la ONU/EDIFACT y sugiere la traducción al translations.json automáticamente.
 
 Task 4.3: Sincronización Global de Diccionarios. * Implementar un sistema de distribución (CDN o Cache) para que las actualizaciones aprobadas por la IA lleguen instantáneamente a todos los clientes.
 
@@ -100,3 +100,19 @@ Rendimiento: Conversión de 100MB de EDIFACT a JSONL en menos de 5 segundos en e
 Compresión: Mantener ratios de ahorro superiores al 95% usando el formato .fra.
 
 Autonomía: El sistema debe ser capaz de auto-proponer traducciones para el 80% de las etiquetas nuevas encontradas.
+
+requisitos Técnicos Pendientes
+
+Instalar clang para compilación WASM
+
+sudo apt-get install clang
+
+Compilar módulo WASM:
+
+cd wasm && cargo build --target wasm32-unknown-unknown --release
+
+Ejecutar API REST:
+
+cargo run --bin api --features api
+
+cd frontend && npm run dev

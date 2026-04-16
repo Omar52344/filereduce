@@ -56,11 +56,11 @@ impl FileReduceWasm {
     pub fn compress_to_fra(&mut self, jsonl_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
         console::log_1(&"Compressing JSONL to .fra".into());
         let mut compressor = FileReduceCompressor::new();
-        let mut output = Vec::new();
+        let mut output = std::io::Cursor::new(Vec::new());
         let input = std::io::Cursor::new(jsonl_bytes);
         compressor.compress(input, &mut output)
             .map_err(|e| JsValue::from_str(&format!("Compression error: {}", e)))?;
-        Ok(output)
+        Ok(output.into_inner())
     }
 
     /// Decompress .fra data to JSONL (synchronous)
@@ -68,11 +68,11 @@ impl FileReduceWasm {
     pub fn decompress_from_fra(&mut self, fra_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
         console::log_1(&"Decompressing .fra to JSONL".into());
         let mut decompressor = FileReduceDecompressor::new();
-        let mut output = Vec::new();
+        let mut output = std::io::Cursor::new(Vec::new());
         let input = std::io::Cursor::new(fra_bytes);
         decompressor.decompress(input, &mut output)
             .map_err(|e| JsValue::from_str(&format!("Decompression error: {}", e)))?;
-        Ok(output)
+        Ok(output.into_inner())
     }
 
     /// Convert JSONL to EDIFACT (placeholder - not yet implemented)
@@ -92,19 +92,19 @@ pub fn convert_edi_to_jsonl_simple(edi_text: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn compress_jsonl_simple(jsonl_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
     let mut compressor = FileReduceCompressor::new();
-    let mut output = Vec::new();
+    let mut output = std::io::Cursor::new(Vec::new());
     let input = std::io::Cursor::new(jsonl_bytes);
     compressor.compress(input, &mut output)
         .map_err(|e| JsValue::from_str(&format!("Compression error: {}", e)))?;
-    Ok(output)
+    Ok(output.into_inner())
 }
 
 #[wasm_bindgen]
 pub fn decompress_fra_simple(fra_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
     let mut decompressor = FileReduceDecompressor::new();
-    let mut output = Vec::new();
+    let mut output = std::io::Cursor::new(Vec::new());
     let input = std::io::Cursor::new(fra_bytes);
     decompressor.decompress(input, &mut output)
         .map_err(|e| JsValue::from_str(&format!("Decompression error: {}", e)))?;
-    Ok(output)
+    Ok(output.into_inner())
 }

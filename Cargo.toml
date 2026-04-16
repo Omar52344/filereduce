@@ -23,18 +23,15 @@ full = [
     "tracing-subscriber", 
     "quick-xml", 
     "tokio", 
-    "tiberius", 
-    "tokio-util", 
+    "db", 
     "serde_yaml", 
     "async-trait", 
-    "futures", 
-    "bb8", 
-    "bb8-tiberius"
+    "futures"
 ]
 core = []
 cli = ["clap", "engine_filereduce", "tracing", "tracing-subscriber", "quick-xml", "tokio", "serde_yaml", "async-trait", "futures"]
 db = ["tiberius", "bb8", "bb8-tiberius", "tokio-util"]
-api = ["warp", "bytes", "full"]
+api = ["warp", "bytes", "cli"]
 
 [dependencies.clap]
 version = "4.5"

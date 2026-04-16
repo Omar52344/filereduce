@@ -1,3 +1,4 @@
+#[cfg(feature = "db")]
 pub mod db;
 pub mod file;
 

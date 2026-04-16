@@ -1,6 +1,13 @@
 use std::io;
 use thiserror::Error;
 
+#[cfg(feature = "db")]
+use bb8::RunError;
+#[cfg(feature = "db")]
+use bb8_tiberius;
+#[cfg(feature = "db")]
+use tiberius;
+
 #[derive(Error, Debug)]
 pub enum FileReduceError {
     #[error("IO error: {0}")]
@@ -15,6 +22,7 @@ pub enum FileReduceError {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    #[cfg(feature = "full")]
     #[error("XML error: {0}")]
     Xml(#[from] quick_xml::Error),
 
@@ -27,14 +35,17 @@ pub enum FileReduceError {
     #[error("Document is incomplete")]
     IncompleteDocument,
 
+    #[cfg(feature = "db")]
     #[error("Database error: {0}")]
     Db(#[from] tiberius::error::Error),
 
+    #[cfg(feature = "db")]
     #[error("Connection manager error: {0}")]
     Manager(#[from] bb8_tiberius::Error),
 
+    #[cfg(feature = "db")]
     #[error("Connection pool error: {0}")]
-    Pool(#[from] bb8::RunError<bb8_tiberius::Error>),
+    Pool(#[from] RunError<bb8_tiberius::Error>),
 }
 
 pub type Result<T> = std::result::Result<T, FileReduceError>;
