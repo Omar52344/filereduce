@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::parser::edifact::parse_segment_with_registry;
 use crate::parser::segment::Segment;
 use crate::translations::{ElementConfig, TranslationRegistry};
+use crate::version_detector::extract_version_from_unh;
 use std::collections::HashMap;
 use std::io::{BufRead, Write};
 
@@ -11,18 +12,44 @@ pub use crate::model::streaming::{StreamingDocument, StreamingLine};
 /// Synchronous EDIFACT processor that writes to any Write implementor
 pub struct EdifactProcessor {
     registry: Option<TranslationRegistry>,
+    version: Option<String>,
 }
 
 impl EdifactProcessor {
     pub fn new() -> Self {
         Self {
             registry: TranslationRegistry::new().ok(),
+            version: None,
         }
     }
 
     pub fn with_registry(registry: TranslationRegistry) -> Self {
         Self {
             registry: Some(registry),
+            version: None,
+        }
+    }
+
+    pub fn version(&self) -> Option<&String> {
+        self.version.as_ref()
+    }
+
+    fn load_version_registry(&mut self, version: &str) -> Result<()> {
+        match TranslationRegistry::from_version(version) {
+            Ok(registry) => {
+                self.registry = Some(registry);
+                self.version = Some(version.to_string());
+                Ok(())
+            }
+            Err(e) => {
+                // If we can't load version-specific registry, keep current one
+                // Log warning
+                eprintln!(
+                    "Warning: Failed to load translation registry for version {}: {}",
+                    version, e
+                );
+                Ok(())
+            }
         }
     }
 
@@ -51,6 +78,14 @@ impl EdifactProcessor {
                     interchange_id = id.to_string();
                 }
                 Segment::UNH => {
+                    // Extract version from UNH segment and load appropriate translation registry
+                    if let Some(detected_version) = extract_version_from_unh(&raw) {
+                        if self.version.as_ref() != Some(&detected_version) {
+                            // Try to load version-specific registry
+                            let _ = self.load_version_registry(&detected_version);
+                        }
+                    }
+
                     current_doc = Some(StreamingDocument {
                         interchange_id: interchange_id.clone(),
                         sender: sender_id.clone(),
@@ -363,5 +398,22 @@ pub(crate) fn apply_dynamic_segment(
         for (key, val) in &field_values {
             doc.extra.insert(key.clone(), val.clone());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version_detection_and_loading() {
+        // Create a simple EDIFACT with UNH containing version D96A
+        let input = "UNB+...\nUNH+1+ORDERS:D:96A:UN\nBGM+220+12345\nUNT+2+1";
+        let mut processor = EdifactProcessor::new();
+        let output = processor.process_to_string(input).unwrap();
+        // Check that version was detected
+        assert_eq!(processor.version(), Some(&"D96A".to_string()));
+        // Output should contain JSONL
+        assert!(output.contains("\"document_number\":\"12345\""));
     }
 }

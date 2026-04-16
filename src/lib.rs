@@ -14,6 +14,7 @@ pub mod parser {
 
 pub mod core;
 pub mod serializer;
+pub mod version_detector;
 
 #[cfg(feature = "full")]
 pub mod processor;

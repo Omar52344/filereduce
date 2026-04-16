@@ -26,6 +26,13 @@ impl TranslationRegistry {
         })
     }
 
+    /// Load translation configuration for a specific EDIFACT version
+    /// Looks for file at `standards/{version}.json` relative to current directory
+    pub fn from_version(version: &str) -> Result<Self> {
+        let path = format!("standards/{}.json", version);
+        Self::from_file(path)
+    }
+
     fn load_default() -> Result<TranslationConfig> {
         let content = include_str!("../../translations.json");
         serde_json::from_str(content).map_err(|e| FileReduceError::Serialization(e))

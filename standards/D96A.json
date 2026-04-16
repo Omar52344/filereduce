@@ -1,0 +1,31 @@
+{
+  "version": "D96A",
+  "metadata": {
+    "last_updated": "2026-04-16T17:57:39.375807842+00:00",
+    "description": "Mock translation for EDIFACT version D96A"
+  },
+  "segments": {
+    "BGM": {
+      "label": "DocumentHeader",
+      "use_qualifier": false,
+      "qualifiers": {},
+      "elements": {
+        "1": "MessageName",
+        "2": "DocumentNumber"
+      }
+    },
+    "DTM": {
+      "label": "DateTime",
+      "use_qualifier": true,
+      "qualifiers": {
+        "137": {
+          "label": "DocumentDate",
+          "elements": {
+            "1": "Value"
+          }
+        }
+      },
+      "elements": {}
+    }
+  }
+}

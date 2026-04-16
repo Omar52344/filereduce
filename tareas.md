@@ -107,20 +107,82 @@ Objetivo: Ejecutar el procesamiento EDIFACT/JSONL directamente en el navegador u
 - Streaming de archivos grandes al worker pendiente (optimización futura)
 - Flujo completo listo para pruebas con archivos de ejemplo
 
-🧠 Hito 4: Inteligencia y Escalabilidad (The Cloud Brain)
+Esta es la evolución de los hitos para la Fase 4, integrando la inteligencia de detección de versiones y el sistema de actualización automática mediante scraping.
 
-Objetivo: Automatizar el mantenimiento del sistema y facilitar la integración empresarial de nivel "Enterprise".
+Como arquitecto, he diseñado este flujo para que el sistema sea "Zero-Config": el usuario solo sube el archivo, y filereduce se encarga de identificar, descargar y mapear la versión correcta.
 
-Task 4.1: Hub de Aprendizaje de Etiquetas. * Crear el servicio que centraliza los reportes de etiquetas desconocidas capturados en el Hito 1.
+🧠 Hito 4: Inteligencia de Estándares y Scraping Automático
+Objetivo: Automatizar la detección de versiones y garantizar que el diccionario de traducciones esté siempre actualizado con los directorios oficiales de la ONU (vía Edifactory).
 
-Task 4.2: Integración de IA SRE DeepSeek * Implementar el agente que analiza etiquetas nuevas contra manuales estándar de la ONU/EDIFACT y sugiere la traducción al translations.json automáticamente.
+Task 4.1: Detector de Versión (UNH Header Parser)
+Descripción: Implementar un "Pre-Parser" ligero que lea el inicio del stream EDIFACT buscando el segmento UNH.
 
-Task 4.3: Sincronización Global de Diccionarios. * Implementar un sistema de distribución (CDN o Cache) para que las actualizaciones aprobadas por la IA lleguen instantáneamente a todos los clientes.
+Detalle Técnico: * Extraer el cuarto elemento del segmento UNH (ej: 96A, 01B).
 
-Task 4.4: Conector SQL Server (Pro). * Desarrollar el generador de esquemas SQL dinámicos basado en el JSONL para la inyección directa de datos a bases de datos empresariales.
+Identificar el tipo de mensaje (ej: ORDERS, INVOIC).
 
-**Estado Hito 4: ⏳ PENDIENTE**
-- Todas las tareas de inteligencia y escalabilidad están pendientes.
+Retornar un "Version Token" que servirá de llave para cargar el JSON correcto.
+
+Task 4.2: Router de Diccionarios (Lazy Loader)
+Descripción: Crear un gestor que decida qué archivo de traducción cargar en memoria.
+
+Detalle Técnico:
+
+Prioridad 1: Buscar en la caché local (/standards/{version}.json).
+
+Prioridad 2: Si no existe, disparar una petición al Crawler Service.
+
+Prioridad 3: Cargar el "User Overlay" (tu translations.json de bitácora personal) para sobreescribir etiquetas específicas si el usuario lo desea.
+
+Task 4.3: Crawler de Edifactory (Rust Scraper)
+Descripción: Desarrollar el servicio encargado de navegar por edifactory.de para extraer la documentación técnica.
+
+Detalle Técnico:
+
+Uso de reqwest para las peticiones GET y scraper (basado en selectores CSS) para parsear el HTML.
+
+Lógica de navegación: Directorio Principal → Segment Directory → Data Element Directory.
+
+Extracción de: Código de segmento, Nombre del segmento, Posición del elemento y Descripción.
+
+Task 4.4: Normalizador y Generador de JSON
+Descripción: Tomar los datos crudos del scraper y transformarlos al formato de metadatos de FileReduce.
+
+Detalle Técnico:
+
+Mapear los elementos compuestos (composite elements) identificados en la web.
+
+Guardar el resultado en un archivo versionado para evitar scraping redundante en el futuro.
+
+Sincronización: El proceso de conversión se mantiene en "espera" unos segundos mientras el JSON se genera por primera vez.
+
+**Estado Hito 4: 🔄 EN PROGRESO**
+- ✅ Task 4.1: Detector de Versión implementado en `src/version_detector.rs` y integrado en `EdifactProcessor`.
+- ✅ Task 4.2: Router de Diccionarios básico implementado (`TranslationRegistry::from_version`) que carga archivos desde `standards/{version}.json`.
+- 🔄 Task 4.3: Crawler de Edifactory en desarrollo en directorio `scraper/`.
+- ⏳ Task 4.4: Normalizador y Generador de JSON pendiente.
+
+### Detalles de Implementación
+
+#### Task 4.1: Detector de Versión
+- **Archivo**: `src/version_detector.rs` con funciones `extract_version_from_unh` y `detect_version_from_lines`.
+- **Integración**: `EdifactProcessor` detecta automáticamente la versión del segmento UNH y carga el diccionario correspondiente.
+- **Formato**: Extrae versión y release (ej. `D96A`) del cuarto elemento del segmento UNH.
+
+#### Task 4.2: Router de Diccionarios
+- **Método**: `TranslationRegistry::from_version(version)` carga archivos desde `standards/{version}.json`.
+- **Fallback**: Si el archivo no existe, se mantiene el diccionario por defecto (o vacío) y se registra advertencia.
+- **Caché**: Los diccionarios cargados se mantienen en memoria para procesamiento posterior.
+
+#### Task 4.3: Crawler de Edifactory (Mock)
+- **Directorio**: `scraper/` con su propio `Cargo.toml` y dependencias (`reqwest`, `scraper`).
+- **Estructura**: `EdifactoryScraper` con método `scrape_version` que actualmente devuelve un mock de configuración.
+- **Uso**: Ejecutar `cargo run --bin filereduce-scraper D96A standards` genera un archivo JSON en `standards/D96A.json`.
+- **Extensible**: La arquitectura permite implementar scraping real contra `https://www.edifactory.de/edifact/`.
+
+#### Task 4.4: Normalizador (Pendiente)
+- **Objetivo**: Transformar datos crudos del scraper al formato `TranslationConfig`.
+- **Próximo paso**: Implementar parsing de tablas HTML y mapeo a segmentos/elementos.
 
 📊 Definición de Éxito (KPIs)
 
@@ -136,10 +198,12 @@ Autonomía: El sistema debe ser capaz de auto-proponer traducciones para el 80% 
 
 ### 🏗️ **Infraestructura Backend (Rust)**
 - **Motor dinámico** completado con `TranslationRegistry` cargando `translations.json`
+- **Detección de versión EDIFACT** integrada en `EdifactProcessor` con carga automática de diccionarios versionados desde `standards/`
 - **API REST** funcionando con 5 endpoints no bloqueantes usando `tokio::task::spawn_blocking`
 - **Módulo WASM** compilado exitosamente (1.4 MB) en `wasm/target/wasm32-unknown-unknown/release/filereduce_wasm.wasm`
 - **Sistema de features** configurado en `Cargo.toml`: `core`, `cli`, `db`, `api`, `full`
 - **Gestión de dependencias** optimizada para reducir tamaño de WASM
+- **Scraper mock** independiente en `scraper/` para generar archivos de traducción versionados
 
 ### 🎨 **Frontend (Next.js)**
 - **Componentes principales** implementados: `FileUpload.tsx`, `DataGrid.tsx`, `Dashboard.tsx`
@@ -169,16 +233,28 @@ cd wasm && cargo build --target wasm32-unknown-unknown --release
 # Archivo generado: wasm/target/wasm32-unknown-unknown/release/filereduce_wasm.wasm
 ```
 
+### Generar diccionarios versionados con el scraper:
+```bash
+# Navegar al directorio scraper y construir (primera vez)
+cd scraper && cargo build --release
+
+# Ejecutar scraper para una versión específica (ej. D96A)
+./target/release/filereduce-scraper D96A ../standards
+
+# También se puede ejecutar desde la raíz del proyecto
+cargo run --bin filereduce-scraper --manifest-path scraper/Cargo.toml D96A standards
+```
+
 ### Ejecutar frontend (Next.js):
 ```bash
 cd frontend && npm run dev
 ```
 
 ## 📊 **Próximos Pasos (Hito 4)**
-1. **Task 4.1**: Implementar Hub de Aprendizaje de Etiquetas para capturar segmentos desconocidos
-2. **Task 4.2**: Integrar IA (DeepSeek) para sugerir traducciones automáticas
-3. **Task 4.3**: Sistema de sincronización global de diccionarios
-4. **Task 4.4**: Conector SQL Server para inyección directa de datos
+1. **Task 4.3**: Completar Crawler de Edifactory para extraer documentación de segmentos y elementos.
+2. **Task 4.4**: Implementar Normalizador que transforme datos crudos del scraper al formato TranslationConfig.
+3. **Integración**: Conectar el crawler con el router de diccionarios para generar archivos automáticamente cuando falta una versión.
+4. **Optimización**: Cachear resultados y permitir actualizaciones periódicas.
 
 ## 🛠️ **Configuración Técnica Revisada**
 - ✅ **WASM**: Compilado sin necesidad de clang (toolchain Rust suficiente)
