@@ -1,8 +1,8 @@
 {
-  "version": "D96A",
+  "version": "D93A",
   "metadata": {
-    "last_updated": "2026-04-17T02:34:47.567265094+00:00",
-    "description": "Auto‑scraped translation for EDIFACT version D96A (updated)"
+    "last_updated": "2026-04-17T03:05:34.189941988+00:00",
+    "description": "Auto‑scraped translation for EDIFACT version D93A"
   },
   "segments": {
     "ALC": {
@@ -26,8 +26,7 @@
             "1": "Special services, coded",
             "2": "Code list qualifier",
             "3": "Code list responsible",
-            "4": "Special service",
-            "5": "Special service"
+            "4": "Special service"
           }
         }
       }
@@ -180,13 +179,7 @@
             "4": "Code list responsible"
           }
         },
-        "4": {
-          "label": "C829SubLineInformation",
-          "components": {
-            "1": "Sub-line indicator, coded",
-            "2": "Line item number"
-          }
-        },
+        "4": "SubLineIndicatorCoded",
         "5": "ConfigurationLevel",
         "6": "ConfigurationCoded"
       }
@@ -238,8 +231,7 @@
           "components": {
             "1": "Measurement dimension, coded",
             "2": "Measurement significance, coded",
-            "3": "Measurement",
-            "4": "Measurement"
+            "3": "Measurement"
           }
         },
         "3": {
@@ -248,8 +240,7 @@
             "1": "Measure unit qualifier",
             "2": "Measurement value",
             "3": "Range minimum",
-            "4": "Range maximum",
-            "5": "Significant digits"
+            "4": "Range maximum"
           }
         },
         "4": "SurfaceLayerIndicatorCoded"
@@ -281,7 +272,7 @@
         "2": {
           "label": "C082PartyIdentificationDetails",
           "components": {
-            "1": "Party id. identification",
+            "1": "Party id identification",
             "2": "Code list qualifier",
             "3": "Code list responsible"
           }
@@ -312,8 +303,7 @@
           "components": {
             "1": "Street",
             "2": "Street",
-            "3": "Street",
-            "4": "Street"
+            "3": "Street"
           }
         },
         "6": "CityName",
@@ -358,10 +348,10 @@
         "5": {
           "label": "C532ReturnablePackageDetails",
           "components": {
-            "1": "Returnable package freight payment"
+            "1": "Returnable package freight payment responsibility,"
           }
         },
-        "6": "ResponsibilityCodeD"
+        "6": "CodedPackageFreightPaymentResponsibility"
       }
     },
     "PRI": {
@@ -496,14 +486,13 @@
         "8": {
           "label": "C222TransportIdentification",
           "components": {
-            "1": "Id. of means of transport identification",
+            "1": "Id of means of transport identification",
             "2": "Code list qualifier",
             "3": "Code list responsible",
-            "4": "Id. of the means of transport",
+            "4": "Id of the means of transport",
             "5": "Nationality of means of transport, coded"
           }
-        },
-        "9": "TransportOwnershipCoded"
+        }
       }
     }
   }

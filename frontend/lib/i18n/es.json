@@ -198,6 +198,22 @@
     "whatsapp": "WhatsApp",
     "email": "Correo electrónico"
   },
+  "generate": {
+    "title": "Generador de Archivos de Prueba EDIFACT",
+    "description": "Genera archivos EDIFACT sintéticos de cualquier versión y tamaño (1-200MB) para pruebas de rendimiento y compresión.",
+    "versionLabel": "Versión EDIFACT",
+    "sizeLabel": "Tamaño de Archivo: {sizeMB} MB",
+    "sizeHint": "Archivos más grandes tardarán más en generarse y pueden afectar el rendimiento del navegador.",
+    "generating": "Generando...",
+    "button": "Generar Archivo EDIFACT",
+    "progress": "Progreso: {progress}%",
+    "ready": "Archivo listo para descargar",
+    "readyDescription": "Tu archivo de prueba EDIFACT ha sido generado. Haz clic en el enlace de abajo para descargar.",
+    "download": "Descargar {filename}",
+    "downloadHint": "El archivo será automáticamente eliminado de la memoria después de la descarga.",
+    "noteTitle": "Nota sobre archivos grandes",
+    "noteText": "Generar archivos mayores a 50MB puede causar lentitud o bloqueos del navegador. Considera usar tamaños más pequeños para pruebas. El EDIFACT generado utiliza una estructura sintética simple y puede no ser semánticamente válido para todas las versiones."
+  },
   "errors": {
     "unsupportedFileType": "Tipo de archivo no soportado",
     "processingFailed": "Procesamiento fallido",

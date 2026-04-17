@@ -185,86 +185,7 @@ export default function FileUpload() {
 
     try {
       processedResult = await processWithWorker(file, fileType);
-        // Fallback to backend API
-        const formData = new FormData();
-        formData.append('file', file);
 
-        let endpoint = '';
-        let operation: Operation = 'conversion';
-        if (fileType === 'edifact') {
-          endpoint = '/api/process/edifact';
-          operation = 'conversion';
-        } else if (fileType === 'jsonl') {
-          endpoint = '/api/process/jsonl';
-          operation = 'compression';
-        } else if (fileType === 'fra') {
-          endpoint = '/api/decompress/fra';
-          operation = 'decompression';
-        } else {
-          setError('Unsupported file type');
-          setProcessing(false);
-          return;
-        }
-
-        const response = await fetch(`http://localhost:8080${endpoint}`, {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) {
-          try {
-            const err = await response.json();
-            throw new Error(err.error || `HTTP ${response.status}`);
-          } catch {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-        }
-
-        const contentType = response.headers.get('content-type') || '';
-        let processedData: any[] | undefined;
-        let processedBlob: Blob | undefined;
-        let processedSize: number | undefined;
-
-        if (contentType.includes('application/jsonl') || contentType.includes('application/json')) {
-          const text = await response.text();
-          processedSize = new TextEncoder().encode(text).length;
-          const lines = text.split('\n').filter(line => line.trim());
-          processedData = lines.map(line => {
-            try {
-              return JSON.parse(line);
-            } catch (e) {
-              console.warn('Failed to parse JSONL line:', line);
-              return null;
-            }
-          }).filter(obj => obj !== null);
-          processedBlob = new Blob([text], { type: 'application/jsonl' });
-        } else if (contentType.includes('application/octet-stream')) {
-          processedBlob = await response.blob();
-          processedSize = processedBlob.size;
-        } else {
-          processedBlob = await response.blob();
-          processedSize = processedBlob.size;
-        }
-
-        processedResult = {
-          originalSize: file.size,
-          processedSize,
-          processedData,
-          processedBlob,
-          fileName: file.name.replace(/\.[^/.]+$/, ''),
-          fileType,
-          operation,
-          contentType,
-  };
-
-  const handleRemove = () => {
-    setFile(null);
-    setFileType('unknown');
-    setResult(null);
-    setError(null);
-    setAlsoCompressToFra(false);
-  };
-
-      }
 
       // Optional compression to .fra for EDIFACT files
       if (alsoCompressToFra && fileType === 'edifact' && processedResult.processedBlob) {
@@ -287,6 +208,14 @@ export default function FileUpload() {
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleRemove = () => {
+    setFile(null);
+    setFileType('unknown');
+    setResult(null);
+    setError(null);
+    setAlsoCompressToFra(false);
   };
 
   const downloadFile = (blob: Blob, filename: string) => {

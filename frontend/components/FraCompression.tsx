@@ -158,51 +158,14 @@ export default function FraCompression() {
     setProcessing(true);
     setError(null);
 
-    const useLocal = processingMode === 'local' && workerReady;
+    const useLocal = workerReady;
     let processedResult: ProcessResult;
 
     try {
-      if (useLocal) {
-        processedResult = await processWithWorker(file, fileType);
-      } else {
-        // Fallback to backend API
-        const formData = new FormData();
-        formData.append('file', file);
-
-        let endpoint = '';
-        if (fileType === 'fra') {
-          endpoint = '/api/decompress/fra';
-        } else {
-          endpoint = '/api/process/jsonl';
-        }
-
-        const response = await fetch(`http://localhost:8080${endpoint}`, {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) {
-          try {
-            const err = await response.json();
-            throw new Error(err.error || `HTTP ${response.status}`);
-          } catch {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-        }
-
-        const contentType = response.headers.get('content-type') || '';
-        const processedBlob = await response.blob();
-        const processedSize = processedBlob.size;
-
-        processedResult = {
-          originalSize: file.size,
-          processedSize,
-          processedBlob,
-          fileName: file.name.replace(/\.[^/.]+$/, ''),
-          fileType,
-          operation: fileType === 'fra' ? 'decompression' : 'compression',
-          contentType,
-        };
-      }
+       if (!useLocal) {
+         throw new Error(t('errors.workerNotReady'));
+       }
+       processedResult = await processWithWorker(file, fileType);
 
       setResult(processedResult);
     } catch (err: any) {

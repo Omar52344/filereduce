@@ -1,8 +1,8 @@
 {
-  "version": "D96A",
+  "version": "D95A",
   "metadata": {
-    "last_updated": "2026-04-17T02:34:47.567265094+00:00",
-    "description": "Auto‑scraped translation for EDIFACT version D96A (updated)"
+    "last_updated": "2026-04-17T03:05:50.396864186+00:00",
+    "description": "Auto‑scraped translation for EDIFACT version D95A"
   },
   "segments": {
     "ALC": {
@@ -26,8 +26,7 @@
             "1": "Special services, coded",
             "2": "Code list qualifier",
             "3": "Code list responsible",
-            "4": "Special service",
-            "5": "Special service"
+            "4": "Special service"
           }
         }
       }
@@ -180,15 +179,10 @@
             "4": "Code list responsible"
           }
         },
-        "4": {
-          "label": "C829SubLineInformation",
-          "components": {
-            "1": "Sub-line indicator, coded",
-            "2": "Line item number"
-          }
-        },
-        "5": "ConfigurationLevel",
-        "6": "ConfigurationCoded"
+        "4": "5495SubLineIndicatorCoded",
+        "5": "+C829SubLineInformation",
+        "6": "ConfigurationLevel",
+        "7": "ConfigurationCoded"
       }
     },
     "LOC": {
@@ -312,8 +306,7 @@
           "components": {
             "1": "Street",
             "2": "Street",
-            "3": "Street",
-            "4": "Street"
+            "3": "Street"
           }
         },
         "6": "CityName",

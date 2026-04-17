@@ -1,8 +1,8 @@
 {
-  "version": "D96A",
+  "version": "D95B",
   "metadata": {
-    "last_updated": "2026-04-17T02:34:47.567265094+00:00",
-    "description": "Auto‑scraped translation for EDIFACT version D96A (updated)"
+    "last_updated": "2026-04-17T03:05:58.225015105+00:00",
+    "description": "Auto‑scraped translation for EDIFACT version D95B"
   },
   "segments": {
     "ALC": {
@@ -26,8 +26,7 @@
             "1": "Special services, coded",
             "2": "Code list qualifier",
             "3": "Code list responsible",
-            "4": "Special service",
-            "5": "Special service"
+            "4": "Special service"
           }
         }
       }
@@ -312,8 +311,7 @@
           "components": {
             "1": "Street",
             "2": "Street",
-            "3": "Street",
-            "4": "Street"
+            "3": "Street"
           }
         },
         "6": "CityName",

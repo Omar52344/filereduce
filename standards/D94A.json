@@ -1,8 +1,8 @@
 {
-  "version": "D96A",
+  "version": "D94A",
   "metadata": {
-    "last_updated": "2026-04-17T02:34:47.567265094+00:00",
-    "description": "Auto‑scraped translation for EDIFACT version D96A (updated)"
+    "last_updated": "2026-04-17T03:05:42.451461735+00:00",
+    "description": "Auto‑scraped translation for EDIFACT version D94A"
   },
   "segments": {
     "ALC": {
@@ -15,21 +15,21 @@
           "label": "C552AllowanceChargeInformation",
           "components": {
             "1": "Allowance or charge number",
-            "2": "Charge/allowance description, coded"
+            "2": "Charge/allowance description, coded",
+            "3": "Charge/allowance description, code d",
+            "4": "SETTLEMENT, CODED"
           }
         },
-        "3": "SettlementCoded",
-        "4": "CalculationSequenceIndicatorCoded",
-        "5": {
+        "3": "CalculationSequenceIndicatorCoded",
+        "4": {
           "label": "C214SpecialServicesIdentification",
           "components": {
-            "1": "Special services, coded",
-            "2": "Code list qualifier",
-            "3": "Code list responsible",
-            "4": "Special service",
-            "5": "Special service"
+            "1": "Special services, coded"
           }
-        }
+        },
+        "5": "CodeListQualifier",
+        "6": "CodeListResponsible",
+        "7": "SpecialService"
       }
     },
     "BGM": {
@@ -180,13 +180,7 @@
             "4": "Code list responsible"
           }
         },
-        "4": {
-          "label": "C829SubLineInformation",
-          "components": {
-            "1": "Sub-line indicator, coded",
-            "2": "Line item number"
-          }
-        },
+        "4": "SubLineIndicatorCoded",
         "5": "ConfigurationLevel",
         "6": "ConfigurationCoded"
       }
@@ -248,8 +242,7 @@
             "1": "Measure unit qualifier",
             "2": "Measurement value",
             "3": "Range minimum",
-            "4": "Range maximum",
-            "5": "Significant digits"
+            "4": "Range maximum"
           }
         },
         "4": "SurfaceLayerIndicatorCoded"
@@ -312,8 +305,7 @@
           "components": {
             "1": "Street",
             "2": "Street",
-            "3": "Street",
-            "4": "Street"
+            "3": "Street"
           }
         },
         "6": "CityName",
@@ -339,13 +331,13 @@
         "3": {
           "label": "C202PackageType",
           "components": {
-            "1": "Type of packages identification",
-            "2": "Code list qualifier",
-            "3": "Code list responsible",
-            "4": "Type of packages"
+            "1": "Type of packages identification"
           }
         },
-        "4": {
+        "4": "CodeListQualifier",
+        "5": "CodeListResponsible",
+        "6": "TypeOfPackages",
+        "7": {
           "label": "C402PackageTypeIdentification",
           "components": {
             "1": "Item description type, coded",
@@ -355,13 +347,13 @@
             "5": "Item number type, coded"
           }
         },
-        "5": {
+        "8": {
           "label": "C532ReturnablePackageDetails",
           "components": {
             "1": "Returnable package freight payment"
           }
         },
-        "6": "ResponsibilityCodeD"
+        "9": "ResponsibilityCodeD"
       }
     },
     "PRI": {
@@ -502,8 +494,7 @@
             "4": "Id. of the means of transport",
             "5": "Nationality of means of transport, coded"
           }
-        },
-        "9": "TransportOwnershipCoded"
+        }
       }
     }
   }

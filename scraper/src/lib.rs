@@ -29,6 +29,29 @@ impl EdifactoryScraper {
         }
     }
 
+    pub fn list_versions(&self) -> Result<Vec<String>, ScraperError> {
+        let url = format!("{}/directories", self.base_url);
+        let resp = self.client.get(&url).send()?;
+        let body = resp.text()?;
+
+        // Extract version patterns like directory/D96A or directory/D01B
+        let re = Regex::new(r#"directory/(D\d{2,3}[A-Z]?)"#).unwrap();
+        let mut versions: Vec<String> = re
+            .captures_iter(&body)
+            .map(|cap| cap[1].to_string())
+            .collect();
+
+        // Also look for links that are just version directories (D96A/)
+        let re2 = Regex::new(r#"href="([^"]*?)(D\d{2,3}[A-Z]?)/"#).unwrap();
+        for cap in re2.captures_iter(&body) {
+            versions.push(cap[2].to_string());
+        }
+
+        versions.sort();
+        versions.dedup();
+        Ok(versions)
+    }
+
     pub fn scrape_version(&self, version: &str) -> Result<TranslationConfig, ScraperError> {
         let segments = self.scrape_segments(version)?;
 
@@ -56,6 +79,51 @@ impl EdifactoryScraper {
             metadata: Metadata {
                 last_updated: chrono::Utc::now().to_rfc3339(),
                 description: format!("Auto‑scraped translation for EDIFACT version {}", version),
+            },
+            segments: segment_configs,
+        })
+    }
+
+    pub fn scrape_version_update(
+        &self,
+        version: &str,
+        existing: Option<TranslationConfig>,
+    ) -> Result<TranslationConfig, ScraperError> {
+        let segments = self.scrape_segments(version)?;
+
+        // Common segments used in typical EDIFACT messages
+        let whitelist: std::collections::HashSet<&'static str> = [
+            "BGM", "DTM", "NAD", "LIN", "QTY", "PRI", "RFF", "CTA", "LOC", "TDT", "PAC", "MEA",
+            "ALC", "TAX", "MOA", "CUX", "FTX", "DOC", "UNH", "UNT", "UNB",
+            "UNZ", // service segments
+        ]
+        .into_iter()
+        .collect();
+
+        // Start with existing segments if provided
+        let mut segment_configs = existing.map(|c| c.segments).unwrap_or_else(BTreeMap::new);
+
+        for (code, description) in segments {
+            if whitelist.contains(&code.as_str()) {
+                // Only scrape if not already present (avoid duplicates)
+                if !segment_configs.contains_key(&code) {
+                    if let Ok(segment_config) = self.scrape_segment(version, &code, &description) {
+                        segment_configs.insert(code, segment_config);
+                    } else {
+                        eprintln!("Failed to scrape segment {}", code);
+                    }
+                }
+            }
+        }
+
+        Ok(TranslationConfig {
+            version: version.to_string(),
+            metadata: Metadata {
+                last_updated: chrono::Utc::now().to_rfc3339(),
+                description: format!(
+                    "Auto‑scraped translation for EDIFACT version {} (updated)",
+                    version
+                ),
             },
             segments: segment_configs,
         })
@@ -334,6 +402,26 @@ impl EdifactoryScraper {
                     .collect();
                 words.join("")
             }
+        }
+    }
+
+    /// Merge two translation configs, preferring existing segments (to avoid overwriting)
+    pub fn merge_configs(existing: TranslationConfig, new: TranslationConfig) -> TranslationConfig {
+        // Ensure versions match
+        assert_eq!(existing.version, new.version);
+
+        let mut merged_segments = existing.segments;
+        for (code, new_segment) in new.segments {
+            // Only insert if not already present (avoid duplicates)
+            if !merged_segments.contains_key(&code) {
+                merged_segments.insert(code, new_segment);
+            }
+        }
+
+        TranslationConfig {
+            version: existing.version,
+            metadata: new.metadata, // Use newer metadata
+            segments: merged_segments,
         }
     }
 

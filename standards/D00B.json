@@ -1,8 +1,8 @@
 {
-  "version": "D96A",
+  "version": "D00B",
   "metadata": {
-    "last_updated": "2026-04-17T02:34:47.567265094+00:00",
-    "description": "Auto‑scraped translation for EDIFACT version D96A (updated)"
+    "last_updated": "2026-04-17T02:44:20.698803866+00:00",
+    "description": "Auto‑scraped translation for EDIFACT version D00B"
   },
   "segments": {
     "ALC": {
@@ -10,24 +10,24 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "AllowanceOrChargeQualifier",
+        "1": "AllowanceOrChargeCodeQualifier",
         "2": {
           "label": "C552AllowanceChargeInformation",
           "components": {
-            "1": "Allowance or charge number",
-            "2": "Charge/allowance description, coded"
+            "1": "Allowance or charge identifier",
+            "2": "Allowance or charge identification code"
           }
         },
-        "3": "SettlementCoded",
-        "4": "CalculationSequenceIndicatorCoded",
+        "3": "SettlementMeansCode",
+        "4": "CalculationSequenceCode",
         "5": {
           "label": "C214SpecialServicesIdentification",
           "components": {
-            "1": "Special services, coded",
-            "2": "Code list qualifier",
+            "1": "Special service description code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Special service",
-            "5": "Special service"
+            "4": "Special service description",
+            "5": "Special service description"
           }
         }
       }
@@ -40,15 +40,22 @@
         "1": {
           "label": "MessageName",
           "components": {
-            "1": "Document/message name, coded",
-            "2": "Code list qualifier",
+            "1": "Document name code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Document/message name"
+            "4": "Document name"
           }
         },
-        "2": "DocumentNumber",
+        "2": {
+          "label": "DocumentNumber",
+          "components": {
+            "1": "Document identifier",
+            "2": "Version identifier",
+            "3": "Revision identifier"
+          }
+        },
         "3": "MessageFunction",
-        "4": "ResponseTypeCoded"
+        "4": "ResponseTypeCode"
       }
     },
     "CTA": {
@@ -56,12 +63,12 @@
       "use_qualifier": false,
       "qualifiers": {},
       "elements": {
-        "1": "ContactFunctionCoded",
+        "1": "ContactFunctionCode",
         "2": {
           "label": "C056DepartmentOrEmployeeDetails",
           "components": {
-            "1": "Department or employee identification",
-            "2": "Department or employee"
+            "1": "Department or employee name code",
+            "2": "Department or employee name"
           }
         }
       }
@@ -74,23 +81,23 @@
         "1": {
           "label": "C504CurrencyDetails",
           "components": {
-            "1": "Currency details qualifier",
-            "2": "Currency, coded",
-            "3": "Currency qualifier",
-            "4": "Currency rate base"
+            "1": "Currency usage code qualifier",
+            "2": "Currency identification code",
+            "3": "Currency type code qualifier",
+            "4": "Currency rate value"
           }
         },
         "2": {
           "label": "C504CurrencyDetails",
           "components": {
-            "1": "Currency details qualifier",
-            "2": "Currency, coded",
-            "3": "Currency qualifier",
-            "4": "Currency rate base"
+            "1": "Currency usage code qualifier",
+            "2": "Currency identification code",
+            "3": "Currency type code qualifier",
+            "4": "Currency rate value"
           }
         },
-        "3": "RateOfExchange",
-        "4": "CurrencyMarketExchangeCoded"
+        "3": "CurrencyExchangeRate",
+        "4": "ExchangeRateCurrencyMarketIdentifier"
       }
     },
     "DOC": {
@@ -101,24 +108,26 @@
         "1": {
           "label": "C002DocumentMessageName",
           "components": {
-            "1": "Document/message name, coded",
-            "2": "Code list qualifier",
+            "1": "Document name code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Document/message name"
+            "4": "Document name"
           }
         },
         "2": {
           "label": "C503DocumentMessageDetails",
           "components": {
-            "1": "Document/message number",
-            "2": "Document/message status, coded",
-            "3": "Document/message source",
-            "4": "Language, coded"
+            "1": "Document identifier",
+            "2": "Document status code",
+            "3": "Document source description",
+            "4": "Language name code",
+            "5": "Version identifier",
+            "6": "Revision identifier"
           }
         },
-        "3": "CommunicationChannelIdentifierCoded",
-        "4": "NumberOfCopiesOfDocumentRequired",
-        "5": "NumberOfOriginalsOfDocumentRequired"
+        "3": "CommunicationMediumTypeCode",
+        "4": "DocumentCopiesRequiredQuantity",
+        "5": "DocumentOriginalsRequiredQuantity"
       }
     },
     "DTM": {
@@ -129,9 +138,9 @@
         "1": {
           "label": "C507DateTimePeriod",
           "components": {
-            "1": "Date/time/period qualifier",
-            "2": "Date/time/period",
-            "3": "Date/time/period format qualifier"
+            "1": "Date or time or period function code qualifier",
+            "2": "Date or time or period value",
+            "3": "Date or time or period format code"
           }
         }
       }
@@ -141,27 +150,28 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "TextSubjectQualifier",
-        "2": "TextFunctionCoded",
+        "1": "TextSubjectCodeQualifier",
+        "2": "FreeTextFunctionCode",
         "3": {
           "label": "C107TextReference",
           "components": {
-            "1": "Free text, coded",
-            "2": "Code list qualifier",
+            "1": "Free text value code",
+            "2": "Code list identification code",
             "3": "Code list responsible"
           }
         },
         "4": {
           "label": "C108TextLiteral",
           "components": {
-            "1": "Free text",
-            "2": "Free text",
-            "3": "Free text",
-            "4": "Free text",
-            "5": "Free text"
+            "1": "Free text value",
+            "2": "Free text value",
+            "3": "Free text value",
+            "4": "Free text value",
+            "5": "Free text value"
           }
         },
-        "5": "LanguageCoded"
+        "5": "LanguageNameCode",
+        "6": "FreeTextFormatCode"
       }
     },
     "LIN": {
@@ -169,26 +179,26 @@
       "use_qualifier": false,
       "qualifiers": {},
       "elements": {
-        "1": "LineItemNumber",
-        "2": "ActionRequestNotificationCoded",
+        "1": "LineItemIdentifier",
+        "2": "ActionRequestNotificationDescriptionCode",
         "3": {
           "label": "C212ItemNumberIdentification",
           "components": {
-            "1": "Item number",
-            "2": "Item number type, coded",
-            "3": "Code list qualifier",
+            "1": "Item identifier",
+            "2": "Item type identification code",
+            "3": "Code list identification code",
             "4": "Code list responsible"
           }
         },
         "4": {
           "label": "C829SubLineInformation",
           "components": {
-            "1": "Sub-line indicator, coded",
-            "2": "Line item number"
+            "1": "Sub-line indicator code",
+            "2": "Line item identifier"
           }
         },
-        "5": "ConfigurationLevel",
-        "6": "ConfigurationCoded"
+        "5": "ConfigurationLevelNumber",
+        "6": "ConfigurationOperationCode"
       }
     },
     "LOC": {
@@ -196,35 +206,35 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "PlaceLocationQualifier",
+        "1": "LocationFunctionCodeQualifier",
         "2": {
           "label": "C517LocationIdentification",
           "components": {
-            "1": "Place/location identification",
-            "2": "Code list qualifier",
+            "1": "Location name code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Place/location"
+            "4": "Location name"
           }
         },
         "3": {
           "label": "C519RelatedLocationOneIdentification",
           "components": {
-            "1": "Related place/location one identification",
-            "2": "Code list qualifier",
+            "1": "First related location name code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Related place/location one"
+            "4": "First related location name"
           }
         },
         "4": {
           "label": "C553RelatedLocationTwoIdentification",
           "components": {
-            "1": "Related place/location two identification",
-            "2": "Code list qualifier",
+            "1": "Second related location name code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Related place/location two"
+            "4": "Second related location name"
           }
         },
-        "5": "RelationCoded"
+        "5": "RelationCode"
       }
     },
     "MEA": {
@@ -232,27 +242,27 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "MeasurementApplicationQualifier",
+        "1": "MeasurementPurposeCodeQualifier",
         "2": {
           "label": "C502MeasurementDetails",
           "components": {
-            "1": "Measurement dimension, coded",
-            "2": "Measurement significance, coded",
-            "3": "Measurement",
-            "4": "Measurement"
+            "1": "Measured",
+            "2": "Measurement significance code",
+            "3": "Non-discrete measurement name code",
+            "4": "Non-discrete measurement name"
           }
         },
         "3": {
           "label": "C174ValueRange",
           "components": {
-            "1": "Measure unit qualifier",
+            "1": "Measurement unit code",
             "2": "Measurement value",
-            "3": "Range minimum",
-            "4": "Range maximum",
-            "5": "Significant digits"
+            "3": "Range minimum value",
+            "4": "Range maximum value",
+            "5": "Significant digits quantity"
           }
         },
-        "4": "SurfaceLayerIndicatorCoded"
+        "4": "SurfaceOrLayerCode"
       }
     },
     "MOA": {
@@ -265,9 +275,9 @@
           "components": {
             "1": "Monetary",
             "2": "Monetary",
-            "3": "Currency, coded",
-            "4": "Currency qualifier",
-            "5": "Status, coded"
+            "3": "Currency identification code",
+            "4": "Currency type code qualifier",
+            "5": "Status description code"
           }
         }
       }
@@ -277,12 +287,12 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "PartyQualifier",
+        "1": "PartyFunctionCodeQualifier",
         "2": {
           "label": "C082PartyIdentificationDetails",
           "components": {
-            "1": "Party id. identification",
-            "2": "Code list qualifier",
+            "1": "Party identifier",
+            "2": "Code list identification code",
             "3": "Code list responsible"
           }
         },
@@ -304,7 +314,7 @@
             "3": "Party name",
             "4": "Party name",
             "5": "Party name",
-            "6": "Party name format, coded"
+            "6": "Party name format code"
           }
         },
         "5": {
@@ -317,9 +327,17 @@
           }
         },
         "6": "CityName",
-        "7": "CountrySubEntityIdentification",
-        "8": "PostcodeIdentification",
-        "9": "CountryCoded"
+        "7": {
+          "label": "C819CountrySubEntityDetails",
+          "components": {
+            "1": "Country sub-entity name code",
+            "2": "Code list identification code",
+            "3": "Code list responsible",
+            "4": "Country sub-entity name"
+          }
+        },
+        "8": "PostalIdentificationCode",
+        "9": "CountryNameCode"
       }
     },
     "PAC": {
@@ -327,20 +345,20 @@
       "use_qualifier": false,
       "qualifiers": {},
       "elements": {
-        "1": "NumberOfPackages",
+        "1": "PackageQuantity",
         "2": {
           "label": "C531PackagingDetails",
           "components": {
-            "1": "Packaging level, coded",
-            "2": "Packaging related information, coded",
+            "1": "Packaging level code",
+            "2": "Packaging related description code",
             "3": "Packaging terms"
           }
         },
         "3": {
           "label": "C202PackageType",
           "components": {
-            "1": "Type of packages identification",
-            "2": "Code list qualifier",
+            "1": "Package type description code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
             "4": "Type of packages"
           }
@@ -348,20 +366,20 @@
         "4": {
           "label": "C402PackageTypeIdentification",
           "components": {
-            "1": "Item description type, coded",
+            "1": "Description format code",
             "2": "Type of packages",
-            "3": "Item number type, coded",
+            "3": "Item type identification code",
             "4": "Type of packages",
-            "5": "Item number type, coded"
+            "5": "Item type identification code"
           }
         },
         "5": {
           "label": "C532ReturnablePackageDetails",
           "components": {
-            "1": "Returnable package freight payment"
+            "1": "Returnable package freight payment responsibility code",
+            "2": "Returnable package load contents code"
           }
-        },
-        "6": "ResponsibilityCodeD"
+        }
       }
     },
     "PRI": {
@@ -372,15 +390,15 @@
         "1": {
           "label": "C509PriceInformation",
           "components": {
-            "1": "Price qualifier",
+            "1": "Price code qualifier",
             "2": "Price",
-            "3": "Price type, coded",
-            "4": "Price type qualifier",
-            "5": "Unit price basis",
-            "6": "Measure unit qualifier"
+            "3": "Price type code",
+            "4": "Price specification code",
+            "5": "Unit price basis value",
+            "6": "Measurement unit code"
           }
         },
-        "2": "SubLinePriceChangeCoded"
+        "2": "SubLineItemPriceChangeOperationCode"
       }
     },
     "QTY": {
@@ -391,9 +409,9 @@
         "1": {
           "label": "C186QuantityDetails",
           "components": {
-            "1": "Quantity qualifier",
+            "1": "Quantity type code qualifier",
             "2": "Quantity",
-            "3": "Measure unit qualifier"
+            "3": "Measurement unit code"
           }
         }
       }
@@ -406,10 +424,11 @@
         "1": {
           "label": "C506Reference",
           "components": {
-            "1": "Reference qualifier",
-            "2": "Reference number",
-            "3": "Line number",
-            "4": "Reference version number"
+            "1": "Reference code qualifier",
+            "2": "Reference identifier",
+            "3": "Document line identifier",
+            "4": "Reference version identifier",
+            "5": "Revision identifier"
           }
         }
       }
@@ -419,39 +438,40 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "DutyTaxFeeFunctionQualifier",
+        "1": "DutyOrTaxOrFeeFunctionCodeQualifier",
         "2": {
           "label": "C241DutyTaxFeeType",
           "components": {
-            "1": "Duty/tax/fee type, coded",
-            "2": "Code list qualifier",
+            "1": "Duty or tax or fee type name code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Duty/tax/fee type"
+            "4": "Duty or tax or fee type name"
           }
         },
         "3": {
           "label": "C533DutyTaxFeeAccountDetail",
           "components": {
-            "1": "Duty/tax/fee",
-            "2": "Code list qualifier",
+            "1": "Duty or tax or fee",
+            "2": "Code list identification code",
             "3": "Code list responsible"
           }
         },
-        "4": "DutyTaxFeeAssessmentBasis",
+        "4": "DutyOrTaxOrFeeAssessmentBasisValue",
         "5": {
           "label": "C243DutyTaxFeeDetail",
           "components": {
-            "1": "Duty/tax/fee rate identification",
-            "2": "Code list qualifier",
+            "1": "Duty or tax or fee rate code",
+            "2": "Code list identification code",
             "3": "Code list responsible",
-            "4": "Duty/tax/fee rate",
-            "5": "Duty/tax/fee rate basis identification",
-            "6": "Code list qualifier",
+            "4": "Duty or tax or fee rate",
+            "5": "Duty or tax or fee rate basis code",
+            "6": "Code list identification code",
             "7": "Code list responsible"
           }
         },
-        "6": "DutyTaxFeeCategoryCoded",
-        "7": "PartyTaxIdentificationNumber"
+        "6": "DutyOrTaxOrFeeCategoryCode",
+        "7": "PartyTaxIdentifier",
+        "8": "CalculationSequenceCode"
       }
     },
     "TDT": {
@@ -459,51 +479,53 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "TransportStageQualifier",
-        "2": "ConveyanceReferenceNumber",
+        "1": "TransportStageCodeQualifier",
+        "2": "MeansOfTransportJourneyIdentifier",
         "3": {
           "label": "C220ModeOfTransport",
           "components": {
-            "1": "Mode of transport, coded",
-            "2": "Mode of transport"
+            "1": "Transport mode name code",
+            "2": "Transport mode name"
           }
         },
         "4": {
           "label": "C228TransportMeans",
           "components": {
-            "1": "Type of means of transport identification",
-            "2": "Type of means of transport"
+            "1": "Transport means description code",
+            "2": "Transport means description"
           }
         },
         "5": {
           "label": "C040Carrier",
           "components": {
-            "1": "Carrier identification",
-            "2": "Code list qualifier",
+            "1": "Carrier identifier",
+            "2": "Code list identification code",
             "3": "Code list responsible",
             "4": "Carrier name"
           }
         },
-        "6": "TransitDirectionCoded",
+        "6": "TransitDirectionIndicatorCode",
         "7": {
           "label": "C401ExcessTransportationInformation",
           "components": {
-            "1": "Excess transportation reason, coded",
-            "2": "Excess transportation responsibility, coded",
-            "3": "Customer"
+            "1": "Excess transportation reason code",
+            "2": "Excess transportation responsibility code",
+            "3": "Customer shipmen t",
+            "4": "dentifier"
           }
         },
         "8": {
           "label": "C222TransportIdentification",
           "components": {
-            "1": "Id. of means of transport identification",
-            "2": "Code list qualifier",
-            "3": "Code list responsible",
-            "4": "Id. of the means of transport",
-            "5": "Nationality of means of transport, coded"
+            "1": "Transport means identificatio n n17..17",
+            "2": "dentifier",
+            "3": "Code list identification code",
+            "4": "Code list responsible",
+            "5": "Transport means identification name",
+            "6": "Transport means nationality code"
           }
         },
-        "9": "TransportOwnershipCoded"
+        "9": "TransportMeansOwnershipIndicatorCode"
       }
     }
   }

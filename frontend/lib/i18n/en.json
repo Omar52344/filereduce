@@ -198,6 +198,22 @@
     "whatsapp": "WhatsApp",
     "email": "Email"
   },
+  "generate": {
+    "title": "EDIFACT Test File Generator",
+    "description": "Generate synthetic EDIFACT files of any version and size (1-200MB) for testing performance and compression.",
+    "versionLabel": "EDIFACT Version",
+    "sizeLabel": "File Size: {sizeMB} MB",
+    "sizeHint": "Larger files will take longer to generate and may impact browser performance.",
+    "generating": "Generating...",
+    "button": "Generate EDIFACT File",
+    "progress": "Progress: {progress}%",
+    "ready": "File ready for download",
+    "readyDescription": "Your EDIFACT test file has been generated. Click the link below to download.",
+    "download": "Download {filename}",
+    "downloadHint": "File will be automatically removed from memory after download.",
+    "noteTitle": "Note about large files",
+    "noteText": "Generating files larger than 50MB may cause browser slowdowns or crashes. Consider using smaller sizes for testing. The generated EDIFACT uses a simple synthetic structure and may not be semantically valid for all versions."
+  },
   "errors": {
     "unsupportedFileType": "Unsupported file type",
     "processingFailed": "Processing failed",

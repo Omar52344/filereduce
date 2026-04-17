@@ -1,8 +1,8 @@
 {
-  "version": "D96A",
+  "version": "D98B",
   "metadata": {
-    "last_updated": "2026-04-17T02:34:47.567265094+00:00",
-    "description": "Auto‑scraped translation for EDIFACT version D96A (updated)"
+    "last_updated": "2026-04-17T03:06:33.301530238+00:00",
+    "description": "Auto‑scraped translation for EDIFACT version D98B"
   },
   "segments": {
     "ALC": {
@@ -46,7 +46,14 @@
             "4": "Document/message name"
           }
         },
-        "2": "DocumentNumber",
+        "2": {
+          "label": "DocumentNumber",
+          "components": {
+            "1": "Document/message number",
+            "2": "Version",
+            "3": "Revision number"
+          }
+        },
         "3": "MessageFunction",
         "4": "ResponseTypeCoded"
       }
@@ -113,7 +120,9 @@
             "1": "Document/message number",
             "2": "Document/message status, coded",
             "3": "Document/message source",
-            "4": "Language, coded"
+            "4": "Language, coded",
+            "5": "Version",
+            "6": "Revision number"
           }
         },
         "3": "CommunicationChannelIdentifierCoded",
@@ -146,7 +155,7 @@
         "3": {
           "label": "C107TextReference",
           "components": {
-            "1": "Free text, coded",
+            "1": "Free text identification",
             "2": "Code list qualifier",
             "3": "Code list responsible"
           }
@@ -161,7 +170,8 @@
             "5": "Free text"
           }
         },
-        "5": "LanguageCoded"
+        "5": "LanguageCoded",
+        "6": "+4447TextFormattingCoded"
       }
     },
     "LIN": {
@@ -232,11 +242,11 @@
       "use_qualifier": true,
       "qualifiers": {},
       "elements": {
-        "1": "MeasurementApplicationQualifier",
+        "1": "MeasurementPurposeQualifier",
         "2": {
           "label": "C502MeasurementDetails",
           "components": {
-            "1": "Measurement dimension, coded",
+            "1": "Property measured, coded",
             "2": "Measurement significance, coded",
             "3": "Measurement",
             "4": "Measurement"
@@ -281,7 +291,7 @@
         "2": {
           "label": "C082PartyIdentificationDetails",
           "components": {
-            "1": "Party id. identification",
+            "1": "Party identification",
             "2": "Code list qualifier",
             "3": "Code list responsible"
           }
@@ -358,10 +368,10 @@
         "5": {
           "label": "C532ReturnablePackageDetails",
           "components": {
-            "1": "Returnable package freight payment"
+            "1": "Returnable package freight payment",
+            "2": "esponsibility, coded 8393 Returnable package load contents, coded"
           }
-        },
-        "6": "ResponsibilityCodeD"
+        }
       }
     },
     "PRI": {
@@ -409,7 +419,8 @@
             "1": "Reference qualifier",
             "2": "Reference number",
             "3": "Line number",
-            "4": "Reference version number"
+            "4": "Reference version number",
+            "5": "Revision number"
           }
         }
       }

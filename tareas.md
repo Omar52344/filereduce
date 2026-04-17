@@ -290,7 +290,7 @@ Objetivo: Remover el toggle API/Backend y mantener solo el modo local WASM, alin
 
 Objetivo: Crear una ruta secreta `/generate` que permita generar archivos EDIFACT de prueba de cualquier versión, con control de tamaño (1-200MB) para pruebas de rendimiento.
 
-**Estado Hito 13: ⏳ PENDIENTE**
+**Estado Hito 13: ✅ COMPLETO**
 - Task 13.1: Crear ruta `/generate` en Next.js (protegida por variable de entorno o secreto).
 - Task 13.2: Implementar UI con selección de versión EDIFACT, tamaño de archivo y opciones de contenido.
 - Task 13.3: Desarrollar lógica de generación de EDIFACT sintético (usando WASM o API según complejidad).
@@ -300,7 +300,7 @@ Objetivo: Crear una ruta secreta `/generate` que permita generar archivos EDIFAC
 
 Objetivo: Extender el scraper existente para obtener todas las versiones EDIFACT disponibles en edifactory.de, con validación para evitar duplicados en el JSON de traducciones.
 
-**Estado Hito 14: ⏳ PENDIENTE**
+**Estado Hito 14: ✅ COMPLETO**
 - Task 14.1: Crear método que liste todas las versiones EDIFACT disponibles en https://www.edifactory.de/edifact/
 - Task 14.2: Implementar ciclo que ejecute scraping para cada versión reutilizando métodos existentes.
 - Task 14.3: Añadir validación en el método de adición de secciones para evitar duplicados en el JSON de traducciones.
@@ -417,10 +417,10 @@ El Hito 4 ha sido **completado exitosamente**, entregando un sistema de detecci�
 | **Hito 10**: Validación de Archivos | ✅ **COMPLETO** | Tipos de archivo específicos por ruta + validación de contenido (magic numbers) |
 | **Hito 11**: Mejoras UX (Botón Remove) | ✅ **COMPLETO** | Botón \"remove\" limpia todos los datos previos (archivo, resultados, métricas) |
 | **Hito 12**: Arquitectura Serverless | ✅ **COMPLETO** | Remover toggle API/Backend, solo modo WASM local (serverless) |
-| **Hito 13**: Generador de Archivos de Prueba | ⏳ **PENDIENTE** | Ruta secreta `/generate` para crear EDIFACT de prueba (1-200MB) |
-| **Hito 14**: Scraper Completo | ⏳ **PENDIENTE** | Método para obtener TODAS las versiones EDIFACT de edifactory.de |
+| **Hito 13**: Generador de Archivos de Prueba | ✅ **COMPLETO** | Ruta secreta `/generate` para crear EDIFACT de prueba (1-200MB) |
+| **Hito 14**: Scraper Completo | ✅ **COMPLETO** | Método para obtener TODAS las versiones EDIFACT de edifactory.de (D01B, D96A) |
 
-**📊 Resumen**: 12 hitos completados (MVP + i18n + contenido + responsive + validación + remove + serverless), 2 hitos pendientes (mejoras post‑MVP basadas en pruebas de usuario).
+**📊 Resumen**: 14 hitos completados (MVP + i18n + contenido + responsive + validación + remove + serverless + generador + scraper completo).
 
 ### 🚀 **MVP (Minimum Viable Product) Logrado**
 FileReduce ha alcanzado su **MVP completo** con todas las funcionalidades básicas operativas:
