@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Dashboard from './Dashboard';
 import { getWasmWorkerClient } from '@/lib/wasmWorker';
+import { useTranslation } from '@/lib/i18n/LanguageContext';
 
 type FileType = 'jsonl' | 'fra';
 type Operation = 'compression' | 'decompression';
@@ -24,8 +25,10 @@ export default function FraCompression() {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [processingMode, setProcessingMode] = useState<'local' | 'backend'>('local');
+
   const [workerReady, setWorkerReady] = useState(false);
+
+  const { t } = useTranslation();
 
   useEffect(() => {
     const client = getWasmWorkerClient();
@@ -44,6 +47,33 @@ export default function FraCompression() {
     if (ext === 'fra') return 'fra';
     // Default to jsonl for .jsonl, .json, or unknown
     return 'jsonl';
+  };
+
+  const validateJsonlContent = async (file: File): Promise<boolean> => {
+    // Read first 1024 bytes to check for JSONL structure
+    const slice = file.slice(0, Math.min(1024, file.size));
+    const text = await slice.text();
+    // JSONL files have each line as a JSON object; at least one line should be valid JSON
+    const lines = text.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return false;
+    // Check first few lines
+    for (let i = 0; i < Math.min(lines.length, 3); i++) {
+      try {
+        JSON.parse(lines[i]);
+        return true; // At least one valid JSON line found
+      } catch {
+        continue;
+      }
+    }
+    return false;
+  };
+
+  const validateFraContent = async (file: File): Promise<boolean> => {
+    // .fra custom format: check for magic bytes "FRA" at start
+    const slice = file.slice(0, 3);
+    const bytes = new Uint8Array(await slice.arrayBuffer());
+    // Check if first three bytes are 'F', 'R', 'A' (ASCII)
+    return bytes.length >= 3 && bytes[0] === 70 && bytes[1] === 82 && bytes[2] === 65;
   };
 
   const processWithWorker = async (file: File, fileType: FileType): Promise<ProcessResult> => {
@@ -78,15 +108,41 @@ export default function FraCompression() {
     };
   };
 
+  const handleRemove = () => {
+    setFile(null);
+    setFileType('jsonl'); // default
+    setResult(null);
+    setError(null);
+  };
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
-    setFile(file);
+    
     const detectedType = detectFileType(file.name);
+    setFile(file);
     setFileType(detectedType);
     setError(null);
     setResult(null);
-  }, []);
+
+    // Validate file content based on detected type
+    if (detectedType === 'jsonl') {
+      validateJsonlContent(file).then(isValid => {
+        if (!isValid) {
+          setError(t('compression.fileInfo.invalidFileType') + ' (File does not appear to be valid JSONL)');
+          setFile(null);
+          setFileType('jsonl'); // keep as jsonl but mark as invalid
+        }
+      }).catch(() => {});
+    } else if (detectedType === 'fra') {
+      validateFraContent(file).then(isValid => {
+        if (!isValid) {
+          setError(t('compression.fileInfo.invalidFileType') + ' (File does not appear to be a valid .fra archive)');
+          setFile(null);
+          setFileType('fra');
+        }
+      }).catch(() => {});
+    }
+  }, [t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -173,12 +229,12 @@ export default function FraCompression() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">FileReduce .fra Compression</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          Convert between JSONL and .fra compression format for optimal storage savings
-        </p>
-      </div>
+       <div className="text-center">
+         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('compression.title')}</h1>
+         <p className="text-gray-600 dark:text-gray-300 mt-2">
+           {t('compression.subtitle')}
+         </p>
+       </div>
 
       <div
         {...getRootProps()}
@@ -190,15 +246,15 @@ export default function FraCompression() {
       >
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p className="text-blue-600 dark:text-blue-400">Drop the file here ...</p>
+           <p className="text-blue-600 dark:text-blue-400">{t('compression.dropzone.active')}</p>
         ) : (
           <>
-            <p className="text-gray-700 dark:text-gray-300">
-              Drag & drop a file, or click to select
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Supported: .fra (compressed), .jsonl, .json
-            </p>
+             <p className="text-gray-700 dark:text-gray-300">
+               {t('compression.dropzone.inactive')}
+             </p>
+             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+               {t('compression.dropzone.supportedFormats')}
+             </p>
           </>
         )}
       </div>
@@ -209,19 +265,19 @@ export default function FraCompression() {
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">{file.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Type: {fileType} • Size: {(file.size / 1024).toFixed(2)} KB • Operation:{' '}
-                {fileType === 'fra' ? 'Decompress to JSONL' : 'Compress to .fra'}
+                 {t('compression.fileInfo.type')}: {fileType} • {t('compression.fileInfo.size')}: {(file.size / 1024).toFixed(2)} KB • {t('compression.fileInfo.operation')}:{' '}
+                 {fileType === 'fra' ? t('compression.actions.decompressToJSONL') : t('compression.actions.compressToFRA')}
               </p>
             </div>
             <button
-              onClick={() => setFile(null)}
+              onClick={handleRemove}
               className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
             >
-              Remove
+                {t('common.remove')}
             </button>
           </div>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
+            {/*<div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing Mode:</span>
                 <button
@@ -243,13 +299,13 @@ export default function FraCompression() {
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {processingMode === 'local' ? 'Processes files locally in your browser' : 'Sends files to backend server'}
               </div>
-            </div>
+            </div>*/}
             <button
               onClick={handleProcess}
               disabled={processing}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing ? 'Processing...' : (fileType === 'fra' ? 'Decompress to JSONL' : 'Compress to .fra')}
+               {processing ? t('common.processing') : (fileType === 'fra' ? t('compression.actions.decompressToJSONL') : t('compression.actions.compressToFRA'))}
             </button>
           </div>
         </div>
@@ -257,7 +313,7 @@ export default function FraCompression() {
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <h4 className="font-medium text-red-800 dark:text-red-300">Error</h4>
+           <h4 className="font-medium text-red-800 dark:text-red-300">{t('common.error')}</h4>
           <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
@@ -265,7 +321,7 @@ export default function FraCompression() {
       {result && (
         <div className="space-y-6">
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-            <h4 className="font-medium text-green-800 dark:text-green-300 text-lg mb-4">Processing Complete</h4>
+             <h4 className="font-medium text-green-800 dark:text-green-300 text-lg mb-4">{t('compression.results.complete')}</h4>
             <Dashboard
               originalSize={result.originalSize}
               processedSize={result.processedSize}
@@ -275,22 +331,22 @@ export default function FraCompression() {
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Download Result</h4>
+             <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">{t('compression.results.downloadResults')}</h4>
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleDownload}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
               >
-                Download {result.operation === 'compression' ? '.fra' : 'JSONL'}
+                 {result.operation === 'compression' ? t('compression.results.downloadFRA') : t('compression.results.downloadJSONL')}
               </button>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-4">
-              Original file: {result.fileName}.{result.fileType} ({Math.round(result.originalSize / 1024)} KB)
-              {result.processedSize && (
-                <span>
-                  {' • '}Processed file: {result.fileName}.{result.operation === 'compression' ? 'fra' : 'jsonl'} ({Math.round(result.processedSize / 1024)} KB)
-                </span>
-              )}
+               {t('compression.results.originalFile', { fileName: result.fileName || 'output', fileType: result.fileType, size: Math.round(result.originalSize / 1024) })}
+               {result.processedSize && (
+                 <span>
+                   {' • '}{t('compression.results.processedFile', { fileName: result.fileName || 'output', extension: result.operation === 'compression' ? 'fra' : 'jsonl', size: Math.round(result.processedSize / 1024) })}
+                 </span>
+               )}
             </p>
           </div>
         </div>
@@ -298,18 +354,16 @@ export default function FraCompression() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-900 dark:text-white">JSONL → .fra</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-            Compress JSONL files to .fra format with 95%+ storage savings.
-            Perfect for archival and cloud storage optimization.
-          </p>
+           <h3 className="font-bold text-gray-900 dark:text-white">{t('compression.features.jsonlToFra.title')}</h3>
+           <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+             {t('compression.features.jsonlToFra.description')}
+           </p>
         </div>
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-900 dark:text-white">.fra → JSONL</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-            Decompress .fra files back to original JSONL format.
-            Lossless restoration of your structured data.
-          </p>
+           <h3 className="font-bold text-gray-900 dark:text-white">{t('compression.features.fraToJsonl.title')}</h3>
+           <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+             {t('compression.features.fraToJsonl.description')}
+           </p>
         </div>
       </div>
     </div>

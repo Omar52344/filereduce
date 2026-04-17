@@ -1,0 +1,206 @@
+{
+  "common": {
+    "appName": "FileReduce",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "remove": "Eliminar",
+    "download": "Descargar",
+    "processing": "Procesando...",
+    "upload": "Subir",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar"
+  },
+  "header": {
+    "title": "FileReduce",
+    "nav": {
+      "edifactProcessor": "Procesador EDIFACT",
+      "fraCompression": "Compresión .fra",
+      "api": "API",
+      "docs": "Documentación",
+      "faqs": "Preguntas Frecuentes",
+      "about": "Quiénes Somos"
+    }
+  },
+  "footer": {
+    "copyright": "FileReduce v0.1.0 • Procesamiento dinámico EDIFACT/JSONL con WebAssembly",
+    "github": "GitHub"
+  },
+  "home": {
+    "title": "Procesador FileReduce",
+    "subtitle": "Sube archivos EDIFACT para conversión a JSONL con compresión .fra opcional",
+    "dropzone": {
+      "active": "Suelta el archivo aquí ...",
+      "inactive": "Arrastra y suelta un archivo, o haz clic para seleccionar",
+      "supportedFormats": "Formatos soportados: .edi, .edifact"
+    },
+    "fileInfo": {
+      "type": "Tipo",
+      "size": "Tamaño",
+      "unknownFileType": "Tipo de archivo desconocido. Por favor sube un formato soportado."
+    },
+    "processing": {
+      "mode": {
+        "local": "Local (WASM)",
+        "backend": "Backend (API)",
+        "workerLoading": "(Cargando worker...)",
+        "workerReady": "✓ Worker listo",
+        "localDescription": "Procesa archivos localmente en tu navegador",
+        "backendDescription": "Envía archivos al servidor backend"
+      },
+      "compressToFra": "También comprimir a .fra",
+      "processButton": "Procesar como {{fileType}}",
+      "processingButton": "Procesando..."
+    },
+    "results": {
+      "complete": "Procesamiento Completado",
+      "dataPreview": "Vista Previa de Datos",
+      "downloadResults": "Descargar Resultados",
+      "originalFile": "Archivo original: {{fileName}}.{{fileType}} ({{size}} KB)",
+      "downloadJSONL": "Descargar JSONL",
+      "downloadCSV": "Descargar CSV",
+      "downloadFRA": "Descargar .fra"
+    },
+    "features": {
+      "edifactToJsonl": {
+        "title": "EDIFACT → JSONL",
+        "description": "Convierte archivos EDIFACT a JSONL estructurado usando traducciones dinámicas."
+      },
+      "jsonlFra": {
+        "title": "JSONL ↔ .fra",
+        "description": "Comprime JSONL a formato .fra (95%+ ahorro) o descomprime de vuelta."
+      },
+      "dynamicTranslations": {
+        "title": "Traducciones Dinámicas",
+        "description": "Mapeo basado en translations.json; soporta telemetría de segmentos desconocidos."
+      }
+    }
+  },
+  "compression": {
+    "title": "Compresión .fra",
+    "subtitle": "Comprime JSONL a .fra o descomprime .fra de vuelta a JSONL",
+    "dropzone": {
+      "active": "Suelta el archivo aquí ...",
+      "inactive": "Arrastra y suelta un archivo JSONL o .fra, o haz clic para seleccionar",
+      "supportedFormats": "Formatos soportados: .jsonl, .json, .fra"
+    },
+    "fileInfo": {
+      "type": "Tipo",
+      "size": "Tamaño",
+      "operation": "Operación",
+      "invalidFileType": "Tipo de archivo inválido. Por favor sube un archivo JSONL o .fra."
+    },
+    "actions": {
+      "decompressToJSONL": "Descomprimir a JSONL",
+      "compressToFRA": "Comprimir a .fra"
+    },
+    "processing": {
+      "processButton": "Procesar como {{fileType}}",
+      "processingButton": "Procesando..."
+    },
+    "results": {
+      "complete": "Procesamiento Completado",
+      "downloadResults": "Descargar Resultados",
+      "downloadJSONL": "Descargar JSONL",
+      "downloadFRA": "Descargar .fra",
+      "originalFile": "Archivo original: {{fileName}}.{{fileType}} ({{size}} KB)",
+      "processedFile": "Archivo procesado: {{fileName}}.{{extension}} ({{size}} KB)"
+    },
+    "features": {
+      "jsonlToFra": {
+        "title": "JSONL → .fra",
+        "description": "Comprime archivos JSONL a formato .fra con ahorros de almacenamiento del 95%+. Perfecto para archivado y optimización de almacenamiento en la nube."
+      },
+      "fraToJsonl": {
+        "title": ".fra → JSONL",
+        "description": "Descomprime archivos .fra de vuelta al formato JSONL original. Restauración sin pérdida de tus datos estructurados."
+      }
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "originalSize": "Tamaño Original",
+    "processedSize": "Tamaño Procesado",
+    "compressionRatio": "Ratio de Compresión",
+    "savings": "Ahorro",
+    "spaceSaved": "Espacio Ahorrado",
+    "reduction": "reducción",
+    "cloudCost": "Costo Mensual Estimado en la Nube",
+    "cloudCostProjected": "Costo en la Nube (Proyectado)",
+    "costSaving": "Ahorro de Costo",
+    "perMonth": "/ mes",
+    "perYear": "/ año",
+    "save": "Ahorrar",
+    "beforeCompression": "Antes de compresión",
+    "inputFile": "Archivo de entrada",
+    "afterCompression": "Después de compresión",
+    "outputFile": "Archivo de salida",
+    "bytes": "bytes",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB"
+  },
+  "faqs": {
+    "title": "Preguntas Frecuentes",
+    "subtitle": "Encuentra respuestas a preguntas comunes sobre FileReduce",
+    "contactTitle": "¿Aún tienes preguntas?",
+    "contactDescription": "No dudes en contactarnos a través de WhatsApp o correo electrónico para soporte, sugerencias o consultas.",
+    "whatsapp": "WhatsApp",
+    "email": "Correo electrónico",
+    "sections": {
+      "general": {
+        "title": "General",
+        "q1": "¿Qué es FileReduce?",
+        "a1": "FileReduce es una herramienta de procesamiento dinámico EDIFACT/JSONL que convierte archivos EDIFACT a JSONL estructurado y los comprime usando el formato .fra para ahorros significativos de almacenamiento.",
+        "q2": "¿Cómo funciona la compresión?",
+        "a2": "FileReduce utiliza un algoritmo de compresión especializado que logra ahorros del 95%+ eliminando redundancia en estructuras JSONL manteniendo capacidades de restauración sin pérdida.",
+        "q3": "¿Mis datos están seguros?",
+        "a3": "Sí, todo el procesamiento ocurre localmente en tu navegador usando WebAssembly. No se envían archivos a servidores externos a menos que uses explícitamente la opción de API backend."
+      },
+      "usage": {
+        "title": "Uso",
+        "q1": "¿Qué formatos de archivo son soportados?",
+        "a1": "FileReduce soporta EDIFACT (.edi, .edifact), JSONL (.jsonl, .json) y archivos de compresión .fra.",
+        "q2": "¿Puedo procesar archivos grandes?",
+        "a2": "Sí, FileReduce puede manejar archivos de hasta varios cientos de megabytes usando procesamiento local WebAssembly o API backend para archivos aún más grandes.",
+        "q3": "¿Cómo descomprimo archivos .fra?",
+        "a3": "Ve a la página de Compresión, sube tu archivo .fra y haz clic en 'Descomprimir a JSONL'. El JSONL original será restaurado sin pérdida."
+      },
+      "technical": {
+        "title": "Técnico",
+        "q1": "¿Qué es el formato .fra?",
+        "a1": ".fra es un formato de compresión personalizado optimizado para datos JSONL, logrando ratios de compresión extremos aprovechando patrones estructurales en JSONL derivados de EDIFACT.",
+        "q2": "¿FileReduce soporta todas las versiones EDIFACT?",
+        "a2": "FileReduce detecta automáticamente las versiones EDIFACT y puede generar diccionarios de traducción sobre la marcha usando su scraper integrado para edifactory.de.",
+        "q3": "¿Puedo usar FileReduce programáticamente?",
+        "a3": "Sí, FileReduce proporciona una API REST y un módulo WebAssembly para integración en tus propias aplicaciones."
+      }
+    }
+  },
+  "about": {
+    "title": "Acerca de FileReduce",
+    "subtitle": "Transformando el procesamiento EDIFACT con traducciones dinámicas y compresión extrema",
+    "missionTitle": "Nuestra Misión",
+    "mission": "Simplificar y optimizar el procesamiento de datos EDIFACT mediante automatización, compresión e interfaces amigables.",
+    "visionTitle": "Nuestra Visión",
+    "vision": "Un mundo donde el intercambio de datos EDIFACT sea tan simple como arrastrar y soltar un archivo, con compresión inteligente reduciendo costos de almacenamiento en un 95%+.",
+    "featuresTitle": "Características Clave",
+    "features": {
+      "dynamic": "Diccionarios de traducción dinámicos que se adaptan a cualquier versión EDIFACT",
+      "compression": "Compresión extrema (.fra) con ahorros de almacenamiento del 95%+",
+      "local": "Procesamiento local en el navegador vía WebAssembly para privacidad y velocidad",
+      "zeroConfig": "Detección automática de versiones y generación de diccionarios sin configuración",
+      "open": "Núcleo de código abierto con arquitectura extensible"
+    },
+    "contactTitle": "Ponte en Contacto",
+    "contactDescription": "Agradecemos comentarios, sugerencias y oportunidades de colaboración.",
+    "whatsapp": "WhatsApp",
+    "email": "Correo electrónico"
+  },
+  "errors": {
+    "unsupportedFileType": "Tipo de archivo no soportado",
+    "processingFailed": "Procesamiento fallido",
+    "workerNotReady": "Worker no listo"
+  }
+}

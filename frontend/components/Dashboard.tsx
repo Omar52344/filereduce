@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n/LanguageContext';
+
 interface DashboardProps {
   originalSize: number; // bytes
   processedSize?: number; // bytes, optional for compression
@@ -13,12 +15,16 @@ export default function Dashboard({
   fileType,
   operation,
 }: DashboardProps) {
+  const { t } = useTranslation();
+  
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return `0 ${t('dashboard.bytes')}`;
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['bytes', 'kb', 'mb', 'gb'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    const value = parseFloat((bytes / Math.pow(k, i)).toFixed(2));
+    const unit = t(`dashboard.${sizes[i]}`);
+    return `${value} ${unit}`;
   };
 
   const calculateSavings = () => {
@@ -45,26 +51,26 @@ export default function Dashboard({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-          Original Size
+           {t('dashboard.originalSize')}
         </h3>
         <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
           {formatBytes(originalSize)}
         </p>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-          {operation === 'compression' ? 'Before compression' : 'Input file'}
+           {operation === 'compression' ? t('dashboard.beforeCompression') : t('dashboard.inputFile')}
         </p>
       </div>
 
       {processedSize && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Processed Size
+             {t('dashboard.processedSize')}
           </h3>
           <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
             {formatBytes(processedSize)}
           </p>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            {operation === 'compression' ? 'After compression' : 'Output file'}
+             {operation === 'compression' ? t('dashboard.afterCompression') : t('dashboard.outputFile')}
           </p>
         </div>
       )}
@@ -72,13 +78,13 @@ export default function Dashboard({
       {savings && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Space Saved
+             {t('dashboard.spaceSaved')}
           </h3>
           <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
             {savings.percentage}%
           </p>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            {formatBytes(savings.savedBytes)} reduction
+             {formatBytes(savings.savedBytes)} {t('dashboard.reduction')}
           </p>
           <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
@@ -91,20 +97,20 @@ export default function Dashboard({
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-          Cloud Cost (Projected)
+             {t('dashboard.cloudCostProjected')}
         </h3>
         <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
           ${originalCost.monthly.toFixed(3)}
           <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-            {' '}/ month
+            {' '}{t('dashboard.perMonth')}
           </span>
         </p>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-          ${originalCost.yearly.toFixed(2)} / year
+          ${originalCost.yearly.toFixed(2)}            {t('dashboard.perYear')}
         </p>
         {processedCost && savings && (
           <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-            Save ${(originalCost.monthly - processedCost.monthly).toFixed(3)}/mo
+             {t('dashboard.save')} ${(originalCost.monthly - processedCost.monthly).toFixed(3)}/mo
           </p>
         )}
       </div>

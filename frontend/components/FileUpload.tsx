@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import DataGrid from './DataGrid';
 import Dashboard from './Dashboard';
 import { getWasmWorkerClient } from '@/lib/wasmWorker';
+import { useTranslation } from '@/lib/i18n/LanguageContext';
 
 type FileType = 'edifact' | 'jsonl' | 'fra' | 'unknown';
 type Operation = 'conversion' | 'compression' | 'decompression';
@@ -27,9 +28,11 @@ export default function FileUpload() {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [processingMode, setProcessingMode] = useState<'local' | 'backend'>('local');
+
   const [workerReady, setWorkerReady] = useState(false);
   const [alsoCompressToFra, setAlsoCompressToFra] = useState(false);
+
+  const { t } = useTranslation();
 
   useEffect(() => {
     const client = getWasmWorkerClient();
@@ -46,9 +49,25 @@ export default function FileUpload() {
   const detectFileType = (filename: string): FileType => {
     const ext = filename.split('.').pop()?.toLowerCase();
     if (ext === 'edi' || ext === 'edifact' || ext === 'txt') return 'edifact';
-    if (ext === 'jsonl' || ext === 'json') return 'jsonl';
-    if (ext === 'fra') return 'fra';
+    // Only EDIFACT files allowed on this page; JSONL and .fra are not accepted
     return 'unknown';
+  };
+
+  const validateEdifactContent = async (file: File): Promise<boolean> => {
+    // Read first 1024 bytes to check for EDIFACT markers
+    const slice = file.slice(0, Math.min(1024, file.size));
+    const text = await slice.text();
+    // EDIFACT files typically start with UNA, UNB, UNH, or at least contain segment terminators "'"
+    // Also check for common EDIFACT service segments
+    if (text.includes("'") && (text.startsWith('UNA') || text.startsWith('UNB') || text.startsWith('UNH'))) {
+      return true;
+    }
+    // Fallback: check for segment-like patterns (three uppercase letters followed by '+')
+    const segmentPattern = /^[A-Z]{3}\+/m;
+    if (segmentPattern.test(text)) {
+      return true;
+    }
+    return false;
   };
 
   const processWithWorker = async (file: File, fileType: FileType): Promise<ProcessResult> => {
@@ -115,16 +134,31 @@ export default function FileUpload() {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
+    
+    const detectedType = detectFileType(file.name);
     setFile(file);
-    setFileType(detectFileType(file.name));
+    setFileType(detectedType);
     setError(null);
     setResult(null);
-  }, []);
+
+    // Validate EDIFACT content if extension suggests EDIFACT
+    if (detectedType === 'edifact') {
+      validateEdifactContent(file).then(isValid => {
+        if (!isValid) {
+          setError(t('home.fileInfo.unknownFileType') + ' (File does not appear to be valid EDIFACT)');
+          setFile(null);
+          setFileType('unknown');
+        }
+      }).catch(() => {
+        // Ignore validation errors
+      });
+    }
+  }, [t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'text/plain': ['.edi', '.edifact', '.txt', '.jsonl', '.json', '.fra'],
+      'text/plain': ['.edi', '.edifact', '.txt'],
     },
     maxFiles: 1,
   });
@@ -134,14 +168,23 @@ export default function FileUpload() {
     setProcessing(true);
     setError(null);
 
-    // Determine processing method
-    const useLocal = processingMode === 'local' && workerReady;
+    // Validate file type - only EDIFACT allowed on this page
+    if (fileType !== 'edifact') {
+      setError(t('home.fileInfo.unknownFileType'));
+      setProcessing(false);
+      return;
+    }
+
+    // Determine processing method - serverless architecture, only local WASM
+    if (!workerReady) {
+      setError(t('errors.workerNotReady'));
+      setProcessing(false);
+      return;
+    }
     let processedResult: ProcessResult;
 
     try {
-      if (useLocal) {
-        processedResult = await processWithWorker(file, fileType);
-      } else {
+      processedResult = await processWithWorker(file, fileType);
         // Fallback to backend API
         const formData = new FormData();
         formData.append('file', file);
@@ -211,7 +254,16 @@ export default function FileUpload() {
           fileType,
           operation,
           contentType,
-        };
+  };
+
+  const handleRemove = () => {
+    setFile(null);
+    setFileType('unknown');
+    setResult(null);
+    setError(null);
+    setAlsoCompressToFra(false);
+  };
+
       }
 
       // Optional compression to .fra for EDIFACT files
@@ -282,12 +334,12 @@ export default function FileUpload() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">FileReduce Processor</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          Upload EDIFACT, JSONL, or .fra files for conversion and compression
-        </p>
-      </div>
+       <div className="text-center">
+         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('home.title')}</h1>
+         <p className="text-gray-600 dark:text-gray-300 mt-2">
+           {t('home.subtitle')}
+         </p>
+       </div>
 
       <div
         {...getRootProps()}
@@ -299,15 +351,15 @@ export default function FileUpload() {
       >
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p className="text-blue-600 dark:text-blue-400">Drop the file here ...</p>
+           <p className="text-blue-600 dark:text-blue-400">{t('home.dropzone.active')}</p>
         ) : (
           <>
-            <p className="text-gray-700 dark:text-gray-300">
-              Drag & drop a file, or click to select
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Supported: .edi, .edifact, .jsonl, .json, .fra
-            </p>
+             <p className="text-gray-700 dark:text-gray-300">
+               {t('home.dropzone.inactive')}
+             </p>
+             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+               {t('home.dropzone.supportedFormats')}
+             </p>
           </>
         )}
       </div>
@@ -318,18 +370,18 @@ export default function FileUpload() {
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">{file.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Type: {fileType} • Size: {(file.size / 1024).toFixed(2)} KB
+                 {t('home.fileInfo.type')}: {fileType} • {t('home.fileInfo.size')}: {(file.size / 1024).toFixed(2)} KB
               </p>
             </div>
             <button
-              onClick={() => setFile(null)}
+              onClick={handleRemove}
               className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
             >
-              Remove
+               {t('common.remove')}
             </button>
           </div>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
+            {/*<div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing Mode:</span>
                 <button
@@ -351,7 +403,7 @@ export default function FileUpload() {
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {processingMode === 'local' ? 'Processes files locally in your browser' : 'Sends files to backend server'}
               </div>
-            </div>
+            </div>*/}
             {fileType === 'edifact' && (
               <div className="flex items-center space-x-2">
                 <input
@@ -362,7 +414,7 @@ export default function FileUpload() {
                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="compress-to-fra" className="text-sm text-gray-700 dark:text-gray-300">
-                  Also compress to .fra
+                   {t('home.processing.compressToFra')}
                 </label>
               </div>
             )}
@@ -371,11 +423,11 @@ export default function FileUpload() {
               disabled={processing || fileType === 'unknown'}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing ? 'Processing...' : `Process as ${fileType.toUpperCase()}`}
+               {processing ? t('home.processing.processingButton') : t('home.processing.processButton', { fileType: fileType.toUpperCase() })}
             </button>
             {fileType === 'unknown' && (
               <p className="text-red-600 dark:text-red-400 text-sm mt-2">
-                Unknown file type. Please upload a supported format.
+                 {t('home.fileInfo.unknownFileType')}
               </p>
             )}
           </div>
@@ -384,7 +436,7 @@ export default function FileUpload() {
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <h4 className="font-medium text-red-800 dark:text-red-300">Error</h4>
+           <h4 className="font-medium text-red-800 dark:text-red-300">{t('common.error')}</h4>
           <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
@@ -392,7 +444,7 @@ export default function FileUpload() {
       {result && (
         <div className="space-y-6">
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-            <h4 className="font-medium text-green-800 dark:text-green-300 text-lg mb-4">Processing Complete</h4>
+             <h4 className="font-medium text-green-800 dark:text-green-300 text-lg mb-4">{t('home.results.complete')}</h4>
             <Dashboard
               originalSize={result.originalSize}
               processedSize={result.processedSize}
@@ -403,13 +455,13 @@ export default function FileUpload() {
 
           {result.processedData && result.processedData.length > 0 && (
             <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Data Preview</h4>
+               <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">{t('home.results.dataPreview')}</h4>
               <DataGrid data={result.processedData} />
             </div>
           )}
 
           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Download Results</h4>
+             <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">{t('home.results.downloadResults')}</h4>
             <div className="flex flex-wrap gap-3">
               {result.processedData && (
                 <>
@@ -417,13 +469,13 @@ export default function FileUpload() {
                     onClick={handleDownloadJSONL}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                   >
-                    Download JSONL
+                     {t('home.results.downloadJSONL')}
                   </button>
                   <button
                     onClick={handleDownloadCSV}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
-                    Download CSV
+                     {t('home.results.downloadCSV')}
                   </button>
                 </>
               )}
@@ -432,7 +484,7 @@ export default function FileUpload() {
                   onClick={handleDownloadFRA}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                 >
-                  Download .fra
+                   {t('home.results.downloadFRA')}
                 </button>
               )}
               {result.processedBlob && result.contentType?.includes('application/jsonl') && (
@@ -440,12 +492,12 @@ export default function FileUpload() {
                   onClick={handleDownloadJSONL}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  Download JSONL
+                   {t('home.results.downloadJSONL')}
                 </button>
               )}
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-4">
-              Original file: {result.fileName}.{result.fileType} ({Math.round(result.originalSize / 1024)} KB)
+               {t('home.results.originalFile', { fileName: result.fileName || 'output', fileType: result.fileType, size: Math.round(result.originalSize / 1024) })}
             </p>
           </div>
         </div>
@@ -453,22 +505,22 @@ export default function FileUpload() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-900 dark:text-white">EDIFACT → JSONL</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-            Convert EDIFACT files to structured JSONL using dynamic translations.
-          </p>
+           <h3 className="font-bold text-gray-900 dark:text-white">{t('home.features.edifactToJsonl.title')}</h3>
+           <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+             {t('home.features.edifactToJsonl.description')}
+           </p>
         </div>
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-900 dark:text-white">JSONL ↔ .fra</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-            Compress JSONL to .fra format (95%+ savings) or decompress back.
-          </p>
+           <h3 className="font-bold text-gray-900 dark:text-white">{t('home.features.jsonlFra.title')}</h3>
+           <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+             {t('home.features.jsonlFra.description')}
+           </p>
         </div>
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h3 className="font-bold text-gray-900 dark:text-white">Dynamic Translations</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-            Mapping driven by translations.json; supports unknown segment telemetry.
-          </p>
+           <h3 className="font-bold text-gray-900 dark:text-white">{t('home.features.dynamicTranslations.title')}</h3>
+           <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+             {t('home.features.dynamicTranslations.description')}
+           </p>
         </div>
       </div>
     </div>
