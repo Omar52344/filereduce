@@ -1,5 +1,5 @@
 // FileReduce WASM Worker (ES Module)
-import initWasm, { convert_edi_to_jsonl_simple, compress_jsonl_simple, decompress_fra_simple } from './filereduce_wasm.js';
+import initWasm, { FileReduceWasm, convert_edi_to_jsonl_simple, compress_jsonl_simple, decompress_fra_simple } from './filereduce_wasm.js';
 
 let wasmInitialized = false;
 
@@ -27,9 +27,36 @@ async function processEdifact(fileData) {
   
   try {
     console.log('[Worker] Converting EDIFACT to JSONL...');
-    const text = new TextDecoder().decode(fileData);
-    const result = convert_edi_to_jsonl_simple(text);
-    const resultBytes = new TextEncoder().encode(result);
+    // Use async conversion for large files (> 50MB), sync for small files
+    const THRESHOLD = 50 * 1024 * 1024; // 50 MB
+    let resultBytes;
+    
+    if (fileData.length > THRESHOLD) {
+      console.log(`[Worker] Large file detected (${(fileData.length / 1024 / 1024).toFixed(2)} MB), using async conversion`);
+      const wasmInstance = new FileReduceWasm();
+      try {
+        const resultPromise = wasmInstance.convert_edi_to_jsonl_async(fileData);
+        // The promise resolves to any (Uint8Array). Wait for it.
+        const result = await resultPromise;
+        // result should be Uint8Array
+        if (result instanceof Uint8Array) {
+          resultBytes = result;
+        } else if (result && typeof result === 'object' && result.byteLength !== undefined) {
+          resultBytes = new Uint8Array(result);
+        } else {
+          throw new Error(`Unexpected result type from async conversion: ${typeof result}`);
+        }
+      } finally {
+        wasmInstance.free();
+      }
+    } else {
+      // Use simple synchronous conversion for smaller files
+      const text = new TextDecoder().decode(fileData);
+      const result = convert_edi_to_jsonl_simple(text);
+      resultBytes = new TextEncoder().encode(result);
+    }
+    
+    console.log(`[Worker] Conversion complete, output size: ${resultBytes.length} bytes`);
     
     return {
       success: true,

@@ -69,30 +69,34 @@ class WasmWorkerClient {
     return this.initPromise;
   }
 
-  private async sendRequest(request: WorkerRequest): Promise<WorkerResponse> {
+  private async sendRequest(request: WorkerRequest, timeoutMs: number = 30000): Promise<WorkerResponse> {
     await this.initPromise;
     
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(request.id, resolve);
       this.worker?.postMessage(request, [request.data.buffer]);
       
-      // Timeout after 30 seconds
+      // Timeout after specified milliseconds
       setTimeout(() => {
         if (this.pendingRequests.has(request.id)) {
           this.pendingRequests.delete(request.id);
-          reject(new Error('Worker request timeout'));
+          reject(new Error(`Worker request timeout (${timeoutMs}ms exceeded)`));
         }
-      }, 30000);
+      }, timeoutMs);
     });
   }
 
   async processEdifact(fileData: Uint8Array): Promise<ProcessResult> {
     const id = `edifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Calculate timeout based on file size: 30 seconds base + 2 seconds per MB, max 10 minutes
+    const sizeMB = fileData.length / (1024 * 1024);
+    const timeoutMs = Math.min(600000, 30000 + Math.ceil(sizeMB) * 2000);
+    
     const response = await this.sendRequest({
       id,
       type: 'process-edifact',
       data: fileData
-    });
+    }, timeoutMs);
 
     if (!response.success) {
       return { success: false, error: response.error };
@@ -106,11 +110,15 @@ class WasmWorkerClient {
 
   async compressJsonl(fileData: Uint8Array): Promise<ProcessResult> {
     const id = `compress-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Calculate timeout based on file size: 30 seconds base + 2 seconds per MB, max 10 minutes
+    const sizeMB = fileData.length / (1024 * 1024);
+    const timeoutMs = Math.min(600000, 30000 + Math.ceil(sizeMB) * 2000);
+    
     const response = await this.sendRequest({
       id,
       type: 'compress-jsonl',
       data: fileData
-    });
+    }, timeoutMs);
 
     if (!response.success) {
       return { success: false, error: response.error };
@@ -124,11 +132,15 @@ class WasmWorkerClient {
 
   async decompressFra(fileData: Uint8Array): Promise<ProcessResult> {
     const id = `decompress-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Calculate timeout based on file size: 30 seconds base + 2 seconds per MB, max 10 minutes
+    const sizeMB = fileData.length / (1024 * 1024);
+    const timeoutMs = Math.min(600000, 30000 + Math.ceil(sizeMB) * 2000);
+    
     const response = await this.sendRequest({
       id,
       type: 'decompress-fra',
       data: fileData
-    });
+    }, timeoutMs);
 
     if (!response.success) {
       return { success: false, error: response.error };
