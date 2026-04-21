@@ -1,0 +1,33 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_filereducewasm_free: (a: number, b: number) => void;
+export const compress_jsonl_simple: (a: number, b: number) => [number, number, number, number];
+export const convert_edi_to_jsonl_simple: (a: number, b: number) => [number, number, number, number];
+export const decompress_fra_simple: (a: number, b: number) => [number, number, number, number];
+export const filereducewasm_compress_to_fra: (a: number, b: number, c: number) => [number, number, number, number];
+export const filereducewasm_convert_edi_to_jsonl: (a: number, b: number, c: number) => [number, number, number, number];
+export const filereducewasm_convert_edi_to_jsonl_async: (a: number, b: number, c: number) => any;
+export const filereducewasm_convert_edi_to_jsonl_bytes: (a: number, b: number, c: number) => [number, number, number, number];
+export const filereducewasm_convert_jsonl_to_edi: (a: number, b: number, c: number) => [number, number, number, number];
+export const filereducewasm_decompress_from_fra: (a: number, b: number, c: number) => [number, number, number, number];
+export const filereducewasm_new: () => number;
+export const rust_zstd_wasm_shim_calloc: (a: number, b: number) => number;
+export const rust_zstd_wasm_shim_free: (a: number) => void;
+export const rust_zstd_wasm_shim_malloc: (a: number) => number;
+export const rust_zstd_wasm_shim_memcmp: (a: number, b: number, c: number) => number;
+export const rust_zstd_wasm_shim_memcpy: (a: number, b: number, c: number) => number;
+export const rust_zstd_wasm_shim_memmove: (a: number, b: number, c: number) => number;
+export const rust_zstd_wasm_shim_memset: (a: number, b: number, c: number) => number;
+export const rust_zstd_wasm_shim_qsort: (a: number, b: number, c: number, d: number) => void;
+export const wasm_bindgen__convert__closures_____invoke__h8cccdd06361b3129: (a: number, b: number, c: any) => [number, number];
+export const wasm_bindgen__convert__closures_____invoke__h4a62e39e18fd861d: (a: number, b: number, c: any, d: any) => void;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __wbindgen_destroy_closure: (a: number, b: number) => void;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __externref_table_dealloc: (a: number) => void;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_start: () => void;

@@ -3,14 +3,22 @@ import initWasm, { convert_edi_to_jsonl_simple, compress_jsonl_simple, decompres
 
 let wasmInitialized = false;
 
-// Initialize WASM module
+ // Initialize WASM module
 async function init() {
   if (wasmInitialized) return;
   
   console.log('[Worker] Initializing WASM module...');
-  await initWasm({ module_or_path: './filereduce_wasm_bg.wasm' });
-  wasmInitialized = true;
-  console.log('[Worker] WASM module initialized');
+  try {
+    // Load WASM with cache-busting query parameter
+    const wasmUrl = './filereduce_wasm_bg.wasm?v=' + Date.now();
+    await initWasm(wasmUrl);
+    wasmInitialized = true;
+    console.log('[Worker] WASM module initialized');
+  } catch (error) {
+    console.error('[Worker] WASM initialization error:', error);
+    console.error('[Worker] Error stack:', error.stack);
+    throw error;
+  }
 }
 
 // Process EDIFACT file
