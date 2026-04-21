@@ -424,16 +424,8 @@ export default function FileUpload() {
                 >
                    {t('home.results.downloadFRA')}
                 </button>
-              )}
-              {result.processedBlob && result.contentType?.includes('application/jsonl') && (
-                <button
-                  onClick={handleDownloadJSONL}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                   {t('home.results.downloadJSONL')}
-                </button>
-              )}
-            </div>
+               )}
+             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-4">
                {t('home.results.originalFile', { fileName: result.fileName || 'output', fileType: result.fileType, size: Math.round(result.originalSize / 1024) })}
             </p>
