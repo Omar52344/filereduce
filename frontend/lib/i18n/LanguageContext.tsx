@@ -262,19 +262,22 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  // Initialize language from localStorage or default to 'en'
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('filereduce-language');
-      if (saved === 'en' || saved === 'es') {
-        return saved;
-      }
-      // Try to detect browser language
-      const browserLang = navigator.language.split('-')[0];
-      if (browserLang === 'es') return 'es';
+  // Initialize language to 'en' for SSR consistency
+  const [language, setLanguageState] = useState<Language>('en');
+
+  // Sync language from client-side preferences after mount
+  useEffect(() => {
+    const saved = localStorage.getItem('filereduce-language');
+    if (saved === 'en' || saved === 'es') {
+      setLanguageState(prev => prev === saved ? prev : saved);
+      return;
     }
-    return 'en';
-  });
+    // Try to detect browser language
+    const browserLang = navigator.language.split('-')[0];
+    if (browserLang === 'es') {
+      setLanguageState(prev => prev === 'es' ? prev : 'es');
+    }
+  }, []);
 
   // Update localStorage when language changes
   const setLanguage = (lang: Language) => {

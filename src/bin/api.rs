@@ -1,9 +1,9 @@
+use bytes::Bytes;
 use filereduce::serializer::EdifactSerializer;
 use filereduce::translations::TranslationRegistry;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use bytes::Bytes;
 use warp::{Filter, Rejection, Reply};
 
 #[derive(Clone)]
@@ -13,8 +13,7 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
-    let registry = TranslationRegistry::new()
-        .expect("Failed to load translations.json");
+    let registry = TranslationRegistry::new().expect("Failed to load translations.json");
     let state = AppState {
         registry: Arc::new(RwLock::new(registry)),
     };
@@ -71,21 +70,26 @@ async fn reload_translations_handler(state: AppState) -> Result<impl Reply, Reje
     match tokio::task::spawn_blocking(move || TranslationRegistry::new()).await {
         Ok(Ok(new_registry)) => {
             *registry_arc.write().await = new_registry;
-            Ok(warp::reply::json(&serde_json::json!({ "message": "Translations reloaded" })).into_response())
+            Ok(
+                warp::reply::json(&serde_json::json!({ "message": "Translations reloaded" }))
+                    .into_response(),
+            )
         }
         Ok(Err(e)) => {
             eprintln!("Failed to reload translations: {}", e);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": format!("{}", e) })),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ).into_response())
+            )
+            .into_response())
         }
         Err(join_err) => {
             eprintln!("Join error: {}", join_err);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": "Internal server error" })),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -100,25 +104,30 @@ async fn process_edifact_handler(body: Bytes, state: AppState) -> Result<impl Re
         let mut processor = EdifactProcessor::with_registry(registry);
         let reader = BufReader::new(Cursor::new(input));
         processor.process_to_vec(reader)
-    }).await {
+    })
+    .await
+    {
         Ok(Ok(output)) => Ok(warp::reply::with_header(
             output,
             warp::http::header::CONTENT_TYPE,
             "application/jsonl",
-        ).into_response()),
+        )
+        .into_response()),
         Ok(Err(e)) => {
             eprintln!("Processing error: {}", e);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": format!("{}", e) })),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
         Err(join_err) => {
             eprintln!("Join error: {}", join_err);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": "Internal server error" })),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -132,27 +141,33 @@ async fn process_jsonl_handler(body: Bytes) -> Result<impl Reply, Rejection> {
         let mut compressor = FileReduceCompressor::new();
         let mut input_cursor = Cursor::new(input);
         let mut output_cursor = Cursor::new(Vec::new());
-        compressor.compress(&mut input_cursor, &mut output_cursor)
+        compressor
+            .compress(&mut input_cursor, &mut output_cursor)
             .map(|_| output_cursor.into_inner())
-    }).await {
+    })
+    .await
+    {
         Ok(Ok(output)) => Ok(warp::reply::with_header(
             output,
             warp::http::header::CONTENT_TYPE,
             "application/octet-stream",
-        ).into_response()),
+        )
+        .into_response()),
         Ok(Err(e)) => {
             eprintln!("Compression error: {}", e);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": format!("{}", e) })),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
         Err(join_err) => {
             eprintln!("Join error: {}", join_err);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": "Internal server error" })),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
@@ -166,34 +181,40 @@ async fn decompress_fra_handler(body: Bytes) -> Result<impl Reply, Rejection> {
         let mut decompressor = FileReduceDecompressor::new();
         let mut input_cursor = Cursor::new(input);
         let mut output_cursor = Cursor::new(Vec::new());
-        decompressor.decompress(&mut input_cursor, &mut output_cursor)
+        decompressor
+            .decompress(&mut input_cursor, &mut output_cursor)
             .map(|_| output_cursor.into_inner())
-    }).await {
+    })
+    .await
+    {
         Ok(Ok(output)) => Ok(warp::reply::with_header(
             output,
             warp::http::header::CONTENT_TYPE,
             "application/jsonl",
-        ).into_response()),
+        )
+        .into_response()),
         Ok(Err(e)) => {
             eprintln!("Decompression error: {}", e);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": format!("{}", e) })),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
         Err(join_err) => {
             eprintln!("Join error: {}", join_err);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": "Internal server error" })),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }
 
 async fn convert_json_to_edi_handler(body: Bytes) -> Result<impl Reply, Rejection> {
     use filereduce::model::streaming::StreamingDocument;
-    
+
     let input = body.to_vec();
     match tokio::task::spawn_blocking(move || {
         let content = match String::from_utf8(input) {
@@ -202,7 +223,7 @@ async fn convert_json_to_edi_handler(body: Bytes) -> Result<impl Reply, Rejectio
                 return Err(format!("Invalid UTF-8: {}", e));
             }
         };
-        
+
         let registry = match TranslationRegistry::new() {
             Ok(r) => r,
             Err(e) => {
@@ -210,7 +231,7 @@ async fn convert_json_to_edi_handler(body: Bytes) -> Result<impl Reply, Rejectio
             }
         };
         let serializer = EdifactSerializer::new(registry);
-        
+
         let mut edifact_output = String::new();
         for line in content.lines() {
             if line.trim().is_empty() {
@@ -231,27 +252,32 @@ async fn convert_json_to_edi_handler(body: Bytes) -> Result<impl Reply, Rejectio
             edifact_output.push_str(&edifact);
             edifact_output.push('\n');
         }
-        
+
         Ok(edifact_output)
-    }).await {
-        Ok(Ok(output)) => Ok(warp::reply::with_header(
-            output,
-            warp::http::header::CONTENT_TYPE,
-            "text/plain",
-        ).into_response()),
+    })
+    .await
+    {
+        Ok(Ok(output)) => {
+            Ok(
+                warp::reply::with_header(output, warp::http::header::CONTENT_TYPE, "text/plain")
+                    .into_response(),
+            )
+        }
         Ok(Err(e)) => {
             eprintln!("Conversion error: {}", e);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": e })),
                 warp::http::StatusCode::BAD_REQUEST,
-            ).into_response())
+            )
+            .into_response())
         }
         Err(join_err) => {
             eprintln!("Join error: {}", join_err);
             Ok(warp::reply::with_status(
                 warp::reply::json(&serde_json::json!({ "error": "Internal server error" })),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ).into_response())
+            )
+            .into_response())
         }
     }
 }

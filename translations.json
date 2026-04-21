@@ -59,6 +59,17 @@
             "1": "ProductId",
             "2": "Type"
           }
+        },
+        "4": "ProductId"
+      }
+    },
+    "PRI": {
+      "label": "PriceInformation",
+      "use_qualifier": true,
+      "qualifiers": {
+        "AAA": {
+          "label": "NetPrice",
+          "elements": { "1": "Value" }
         }
       }
     }

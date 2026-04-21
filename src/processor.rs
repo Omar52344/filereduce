@@ -5,10 +5,10 @@ use crate::parser::segment::Segment;
 use crate::sink::{DataSink, SinkItem};
 
 use crate::core::apply_dynamic_segment;
-use tracing;
 use engine_filereduce::executor::executor::eval;
 use engine_filereduce::query::ast::Expr;
 use engine_filereduce::row::{Row, RowKind, Value};
+use tracing;
 
 use std::io::BufRead;
 
@@ -36,8 +36,6 @@ pub async fn process<R: BufRead + Send>(
         ))),
     }
 }
-
-
 
 async fn process_edifact<R: BufRead>(
     reader: R,
@@ -196,7 +194,11 @@ async fn process_edifact<R: BufRead>(
                 }
             }
             Segment::UNZ => {}
-            Segment::Dynamic { code, qualifier, elements: element_groups } => {
+            Segment::Dynamic {
+                code,
+                qualifier,
+                elements: element_groups,
+            } => {
                 if let Some(reg) = &registry {
                     apply_dynamic_segment(
                         code,

@@ -86,7 +86,9 @@ export default function GeneratePageClient({ availableVersions }: GeneratePageCl
     }
     
     // Combine header and items
-    lines.push(...itemLines);
+    for (const line of itemLines) {
+      lines.push(line);
+    }
     
     // CNT: Control count
     lines.push(segment('CNT', '2', Math.floor(itemLines.length / 3).toString()));

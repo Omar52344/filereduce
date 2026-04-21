@@ -197,6 +197,17 @@ impl EdifactProcessor {
             }
         }
 
+        // Flush any remaining line and document at end of file
+        if let Some(line) = current_line.take() {
+            if let Some(doc) = current_doc.as_mut() {
+                doc.lines.push(line);
+            }
+        }
+        if let Some(doc) = current_doc.take() {
+            serde_json::to_writer(&mut *writer, &doc)?;
+            writer.write_all(b"\n")?;
+        }
+
         Ok(())
     }
 
@@ -224,7 +235,9 @@ pub(crate) fn apply_dynamic_segment(
     current_line: &mut Option<StreamingLine>,
 ) {
     // Determine if segment affects document or line
-    let is_line_segment = matches!(segment_code, "LIN" | "QTY" | "MOA");
+    // Line-level segments: LIN (line item), QTY (quantity), MOA (monetary amount), PRI (price)
+    // Document-level segments: BGM, DTM, NAD, CNT, CUX, etc.
+    let is_line_segment = matches!(segment_code, "LIN" | "QTY" | "MOA" | "PRI");
 
     let Some(segment_config) = registry.get_segment(segment_code) else {
         return;
@@ -344,14 +357,20 @@ pub(crate) fn apply_dynamic_segment(
             }
         }
         "LIN" => {
-            if let Some(line) = current_line.as_mut() {
-                if let Some(line_no) = field_values.get("LineNumber") {
-                    line.line_no = line_no.parse().unwrap_or(0);
-                }
-                if let Some(sku) = field_values.get("ProductId") {
-                    line.sku = sku.clone();
+            // Push previous line to document and start a new line
+            if let Some(prev_line) = current_line.take() {
+                if let Some(doc) = current_doc.as_mut() {
+                    doc.lines.push(prev_line);
                 }
             }
+            let mut new_line = StreamingLine::default();
+            if let Some(line_no) = field_values.get("LineNumber") {
+                new_line.line_no = line_no.parse().unwrap_or(0);
+            }
+            if let Some(sku) = field_values.get("ProductId") {
+                new_line.sku = sku.clone();
+            }
+            *current_line = Some(new_line);
         }
         "QTY" => {
             if let Some(line) = current_line.as_mut() {
@@ -367,6 +386,13 @@ pub(crate) fn apply_dynamic_segment(
             if let Some(line) = current_line.as_mut() {
                 if let Some(amt) = field_values.get("Value") {
                     line.amount = amt.parse().ok();
+                }
+            }
+        }
+        "PRI" => {
+            if let Some(line) = current_line.as_mut() {
+                if let Some(price) = field_values.get("Value") {
+                    line.amount = price.parse().ok();
                 }
             }
         }

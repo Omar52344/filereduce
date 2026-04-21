@@ -38,14 +38,16 @@ pub fn parse_segment_with_registry<'a>(
             tokens.get(2).and_then(|v| v.get(0)).copied().unwrap_or(""),
         ),
         "DTM" => {
-            let v = &tokens[1];
-            Segment::DTM(
-                v.get(0).copied().unwrap_or(""),
-                v.get(1).copied().unwrap_or(""),
-            )
+            let qual = tokens.get(1).and_then(|v| v.get(0)).copied().unwrap_or("");
+            let val = if tokens.len() >= 3 {
+                tokens.get(2).and_then(|v| v.get(0)).copied().unwrap_or("")
+            } else {
+                tokens.get(1).and_then(|v| v.get(1)).copied().unwrap_or("")
+            };
+            Segment::DTM(qual, val)
         }
         "NAD" => Segment::NAD(
-            tokens[1][0],
+            tokens.get(1).and_then(|v| v.get(0)).copied().unwrap_or(""),
             tokens.get(2).and_then(|v| v.get(0)).copied().unwrap_or(""),
         ),
         "LIN" => Segment::LIN(
@@ -53,13 +55,28 @@ pub fn parse_segment_with_registry<'a>(
             tokens.get(3).and_then(|v| v.get(0)).copied().unwrap_or(""),
         ),
         "QTY" => Segment::QTY(
-            tokens[1][0],
-            tokens[1][1],
-            tokens[1].get(2).copied().unwrap_or(""),
+            tokens.get(1).and_then(|v| v.get(0)).copied().unwrap_or(""),
+            tokens.get(2).and_then(|v| v.get(0)).copied().unwrap_or(""),
+            tokens.get(3).and_then(|v| v.get(0)).copied().unwrap_or(""),
         ),
-        "MOA" => Segment::MOA(tokens[1][0], tokens[1][1]),
-        "CNT" => Segment::CNT(tokens[1][0], tokens[1][1]),
-        "CUX" => Segment::CUX(tokens.get(1).and_then(|v| v.get(1)).copied().unwrap_or("")),
+        "MOA" => Segment::MOA(
+            tokens.get(1).and_then(|v| v.get(0)).copied().unwrap_or(""),
+            tokens.get(2).and_then(|v| v.get(0)).copied().unwrap_or(""),
+        ),
+        "CNT" => Segment::CNT(
+            tokens.get(1).and_then(|v| v.get(0)).copied().unwrap_or(""),
+            tokens.get(2).and_then(|v| v.get(0)).copied().unwrap_or(""),
+        ),
+        "CUX" => Segment::CUX(
+            tokens
+                .get(2)
+                .and_then(|v| v.get(0))
+                .copied()
+                .unwrap_or_else(|| {
+                    // Fallback to second subcomponent of first element (format CUX+2:USD)
+                    tokens.get(1).and_then(|v| v.get(1)).copied().unwrap_or("")
+                }),
+        ),
         "UNT" => Segment::UNT,
         "UNZ" => Segment::UNZ,
         other => Segment::Unknown(other),
