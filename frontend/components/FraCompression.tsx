@@ -96,6 +96,9 @@ export default function FraCompression() {
       type: fileType === 'fra' ? 'application/jsonl' : 'application/octet-stream'
     });
     const processedSize = processedBlob.size;
+    if (processedSize === 0) {
+      throw new Error('Output file is empty. The processing may have failed.');
+    }
 
     return {
       originalSize: file.size,

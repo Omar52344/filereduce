@@ -196,20 +196,24 @@
     "contactTitle": "Get in Touch",
     "contactDescription": "We welcome feedback, suggestions, and collaboration opportunities.",
     "whatsapp": "WhatsApp",
-    "email": "Email"
+    "email": "Email",
+    "storyTitle": "The FileReduce Story",
+    "story1": "FileReduce started as a solution to a common problem in EDI processing: static, hard‑coded translation tables that couldn't adapt to new EDIFACT versions. By introducing dynamic translation dictionaries and automatic version detection, we eliminated the need for manual updates and configuration.",
+    "story2": "The second breakthrough came with the .fra compression format. While working with large JSONL datasets derived from EDIFACT, we noticed extreme redundancy in the structure. By developing a specialized compression algorithm tailored to this pattern, we achieved consistent savings of 95% or more.",
+    "story3": "Today, FileReduce combines these innovations with a modern web interface, WebAssembly for local processing, and a zero‑config architecture that makes EDIFACT processing accessible to everyone—from logistics managers to data engineers."
   },
   "generate": {
     "title": "EDIFACT Test File Generator",
     "description": "Generate synthetic EDIFACT files of any version and size (1-200MB) for testing performance and compression.",
     "versionLabel": "EDIFACT Version",
-    "sizeLabel": "File Size: {sizeMB} MB",
+    "sizeLabel": "File Size: {{sizeMB}} MB",
     "sizeHint": "Larger files will take longer to generate and may impact browser performance.",
     "generating": "Generating...",
     "button": "Generate EDIFACT File",
-    "progress": "Progress: {progress}%",
+    "progress": "Progress: {{progress}}%",
     "ready": "File ready for download",
     "readyDescription": "Your EDIFACT test file has been generated. Click the link below to download.",
-    "download": "Download {filename}",
+    "download": "Download {{filename}}",
     "downloadHint": "File will be automatically removed from memory after download.",
     "noteTitle": "Note about large files",
     "noteText": "Generating files larger than 50MB may cause browser slowdowns or crashes. Consider using smaller sizes for testing. The generated EDIFACT uses a simple synthetic structure and may not be semantically valid for all versions."

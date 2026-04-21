@@ -156,6 +156,83 @@ export interface Translations {
     processingFailed: string;
     workerNotReady: string;
   };
+  about: {
+    title: string;
+    subtitle: string;
+    missionTitle: string;
+    mission: string;
+    visionTitle: string;
+    vision: string;
+    featuresTitle: string;
+    features: {
+      dynamic: string;
+      compression: string;
+      local: string;
+      zeroConfig: string;
+      open: string;
+    };
+    contactTitle: string;
+    contactDescription: string;
+    whatsapp: string;
+    email: string;
+    storyTitle: string;
+    story1: string;
+    story2: string;
+    story3: string;
+  };
+  faqs: {
+    title: string;
+    subtitle: string;
+    contactTitle: string;
+    contactDescription: string;
+    whatsapp: string;
+    email: string;
+    sections: {
+      general: {
+        title: string;
+        q1: string;
+        a1: string;
+        q2: string;
+        a2: string;
+        q3: string;
+        a3: string;
+      };
+      usage: {
+        title: string;
+        q1: string;
+        a1: string;
+        q2: string;
+        a2: string;
+        q3: string;
+        a3: string;
+      };
+      technical: {
+        title: string;
+        q1: string;
+        a1: string;
+        q2: string;
+        a2: string;
+        q3: string;
+        a3: string;
+      };
+    };
+  };
+  generate: {
+    title: string;
+    description: string;
+    versionLabel: string;
+    sizeLabel: string;
+    sizeHint: string;
+    generating: string;
+    button: string;
+    progress: string;
+    ready: string;
+    readyDescription: string;
+    download: string;
+    downloadHint: string;
+    noteTitle: string;
+    noteText: string;
+  };
 }
 
 // Type guard for translations
@@ -244,9 +321,17 @@ export function useTranslation() {
     }
     
     if (typeof value === 'string' && params) {
-      return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+      // Replace both {{placeholder}} and {placeholder} patterns
+      let result = value;
+      // Double curly braces
+      result = result.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
         return params[paramKey] !== undefined ? String(params[paramKey]) : match;
       });
+      // Single curly braces (fallback)
+      result = result.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        return params[paramKey] !== undefined ? String(params[paramKey]) : match;
+      });
+      return result;
     }
     
     return value;

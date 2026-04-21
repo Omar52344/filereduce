@@ -291,20 +291,20 @@ Objetivo: Remover el toggle API/Backend y mantener solo el modo local WASM, alin
 Objetivo: Crear una ruta secreta `/generate` que permita generar archivos EDIFACT de prueba de cualquier versión, con control de tamaño (1-200MB) para pruebas de rendimiento.
 
 **Estado Hito 13: ✅ COMPLETO**
-- Task 13.1: Crear ruta `/generate` en Next.js (protegida por variable de entorno o secreto).
-- Task 13.2: Implementar UI con selección de versión EDIFACT, tamaño de archivo y opciones de contenido.
-- Task 13.3: Desarrollar lógica de generación de EDIFACT sintético (usando WASM o API según complejidad).
-- Task 13.4: Probar la generación de archivos de diferentes tamaños y validar que sean EDIFACT válidos.
+- ✅ Task 13.1: Crear ruta `/generate` en Next.js (protegida por variable de entorno o secreto).
+- ✅ Task 13.2: Implementar UI con selección de versión EDIFACT, tamaño de archivo y opciones de contenido.
+- ✅ Task 13.3: Desarrollar lógica de generación de EDIFACT sintético (usando WASM o API según complejidad).
+- ✅ Task 13.4: Probar la generación de archivos de diferentes tamaños y validar que sean EDIFACT válidos.
 
 🕸️ Hito 14: Scraper Completo
 
 Objetivo: Extender el scraper existente para obtener todas las versiones EDIFACT disponibles en edifactory.de, con validación para evitar duplicados en el JSON de traducciones.
 
 **Estado Hito 14: ✅ COMPLETO**
-- Task 14.1: Crear método que liste todas las versiones EDIFACT disponibles en https://www.edifactory.de/edifact/
-- Task 14.2: Implementar ciclo que ejecute scraping para cada versión reutilizando métodos existentes.
-- Task 14.3: Añadir validación en el método de adición de secciones para evitar duplicados en el JSON de traducciones.
-- Task 14.4: Ejecutar scraping completo y almacenar todos los diccionarios en `standards/`.
+- ✅ Task 14.1: Crear método que liste todas las versiones EDIFACT disponibles en https://www.edifactory.de/edifact/
+- ✅ Task 14.2: Implementar ciclo que ejecute scraping para cada versión reutilizando métodos existentes.
+- ✅ Task 14.3: Añadir validación en el método de adición de secciones para evitar duplicados en el JSON de traducciones.
+- ✅ Task 14.4: Ejecutar scraping completo y almacenar todos los diccionarios en `standards/`.
 
 
 📊 Definición de Éxito (KPIs)
@@ -432,39 +432,34 @@ FileReduce ha alcanzado su **MVP completo** con todas las funcionalidades básic
 5. **Procesamiento en navegador** vía WebAssembly
 6. **Sistema Zero‑Config** que detecta versiones EDIFACT y genera diccionarios automáticamente
 
-### 📅 **Última actualización**: 2026‑04‑16
+### 📅 **Última actualización**: 2026‑04‑21
 El proyecto está listo para despliegue en producción y uso continuo.
 
 **Nota**: Las pruebas funcionales se han separado al archivo `pruebas.md`. Los 10 puntos de mejora identificados en pruebas ahora están formalizados como hitos 7-14.
 
 
 
-CAMBIOS REQUERIDOS SEGUN PRUEBAS
+📋 Hito de Pruebas: Requisitos de Pruebas
 
+Objetivo: Implementar las mejoras identificadas durante las pruebas de usuario para pulir la experiencia y funcionalidad del sistema.
 
-1.crear es json de traducciones entre ingles español dar la opcion de cambiar el idioma en el header del front
+Task P.1: Internacionalización (i18n) - Crear JSON de traducciones inglés/español y selector de idioma en el header.
+Task P.2: Páginas de Contenido - Crear página de FAQs con contacto WhatsApp/email y página "Quiénes somos".
+Task P.3: Remover enlace a GitHub del frontend.
+Task P.4: Header Responsive - Adaptar el header para dispositivos móviles.
+Task P.5: Validación de Archivos por Ruta - Restringir extensiones EDIFACT en ruta / y JSONL/.fra en ruta /compression.
+Task P.6: Botón Remove - Limpiar todos los datos informativos previos al hacer clic.
+Task P.7: Arquitectura Serverless - Remover toggle API/Backend, mantener solo modo WASM local.
+Task P.8: Generador de Archivos de Prueba - Ruta secreta /generate para crear EDIFACT sintético de cualquier versión y tamaño.
+Task P.9: Scraper Completo - Extraer todas las versiones EDIFACT de edifactory.de y generar diccionarios automáticamente.
 
-2.crear pagina de FAQS dudas o inquietudes o sugerencias poner un link de whatsapp
-+57 3175604331
-correo omarjaramillo8@gmail.com
-
-3.agrega una pagina de quienes somos sencilla una pagina de quienes somos
-
-4.quitar el link del repositorio de github
-
-5.hacer responsive el header
-
-6.falla en la validacion de carga de archivos solo se deben permitir cargar archivos edi o edifact para procesar de edifact a jsonl en la ruta / y en la de compresion solo se deben recibir jsonl
-
-7.si se da click en el boton remove de los archivos , se deben eliminar los datos informativos previos
-
-8.he dejado solamente en modo local las conversiones para no tener que desplegar api , arquitectura serverless por eso he comentado el modo de ejecucion
-
-9.generar una ruta no publica (secreta) /generate que genera archivos de cualquier version de edifact edi que el usuario pueda escoger de cuales versiones edifact hacer un export con todas las etiquetas que tengan informacion o aleatoriamente y escogiendo el tamaño de archivos dinamicamente desde 1mb hasta 200mb para probrar con una barra lateral, este procesamiento debe ser por metodos mas convenientemente wasm para que genere dichos archivos si es muy complejo generarlo mejor por api
-
-10.en el scraper crear un metodo que busque todas las versiones disponibles de edi o edifacat en la pagina de https://www.edifactory.de/edifact/ y haga un ciclo para que  le haga scraping a todas reusando los metodos que ya estan que recibe por version individual , esperando que el metodo de adicion de seccion al json de version de edifact de translation antes de agregarla revalide si ya existe dicha seccion para evitar errores
-si no tiene esta validacion para editar el json (este metodo permite alimentar toda la bitacora de versiones de edifact para iniciar)
-
-
-
-
+**Estado Hito de Pruebas: ✅ COMPLETADO**
+- ✅ Task P.1: Implementado como **Hito 7** (Internacionalización).
+- ✅ Task P.2: Implementado como **Hito 8** (Páginas de Contenido).
+- ✅ Task P.3: Incluido en Hito 8.
+- ✅ Task P.4: Implementado como **Hito 9** (Header Responsive).
+- ✅ Task P.5: Implementado como **Hito 10** (Validación de Archivos).
+- ✅ Task P.6: Implementado como **Hito 11** (Mejoras UX - Botón Remove).
+- ✅ Task P.7: Implementado como **Hito 12** (Arquitectura Serverless).
+- ✅ Task P.8: Implementado como **Hito 13** (Generador de Archivos de Prueba).
+- ✅ Task P.9: Implementado como **Hito 14** (Scraper Completo).

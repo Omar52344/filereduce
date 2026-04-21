@@ -100,6 +100,9 @@ export default function FileUpload() {
       const jsonlData = result.data;
       const jsonlBytes = jsonlData instanceof Uint8Array ? jsonlData : new TextEncoder().encode(jsonlData as string);
       processedSize = jsonlBytes.length;
+      if (processedSize === 0) {
+        throw new Error('Output file is empty. The EDIFACT file may not contain valid segments.');
+      }
       const text = new TextDecoder().decode(jsonlBytes);
       const lines = text.split('\n').filter(line => line.trim());
       processedData = lines.map(line => {
@@ -110,12 +113,18 @@ export default function FileUpload() {
           return null;
         }
       }).filter(obj => obj !== null);
+      if (processedData.length === 0) {
+        throw new Error('No valid JSONL lines produced. The EDIFACT file may not be compatible.');
+      }
       contentType = 'application/jsonl';
       processedBlob = new Blob([jsonlBytes.slice()], { type: 'application/jsonl' });
     } else if (fileType === 'jsonl') {
       // Result is .fra (Uint8Array)
       processedBlob = new Blob([(result.data as any).slice()], { type: 'application/octet-stream' });
       processedSize = processedBlob.size;
+      if (processedSize === 0) {
+        throw new Error('Output .fra file is empty. Compression may have failed.');
+      }
       contentType = 'application/octet-stream';
     }
 

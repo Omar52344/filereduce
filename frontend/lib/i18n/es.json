@@ -196,20 +196,24 @@
     "contactTitle": "Ponte en Contacto",
     "contactDescription": "Agradecemos comentarios, sugerencias y oportunidades de colaboración.",
     "whatsapp": "WhatsApp",
-    "email": "Correo electrónico"
+    "email": "Correo electrónico",
+    "storyTitle": "La Historia de FileReduce",
+    "story1": "FileReduce comenzó como una solución a un problema común en el procesamiento EDI: tablas de traducción estáticas y codificadas que no podían adaptarse a nuevas versiones EDIFACT. Al introducir diccionarios de traducción dinámicos y detección automática de versiones, eliminamos la necesidad de actualizaciones y configuración manual.",
+    "story2": "El segundo avance llegó con el formato de compresión .fra. Mientras trabajábamos con grandes conjuntos de datos JSONL derivados de EDIFACT, notamos una redundancia extrema en la estructura. Al desarrollar un algoritmo de compresión especializado adaptado a este patrón, logramos ahorros consistentes del 95% o más.",
+    "story3": "Hoy, FileReduce combina estas innovaciones con una interfaz web moderna, WebAssembly para procesamiento local y una arquitectura zero‑config que hace que el procesamiento EDIFACT sea accesible para todos, desde gerentes de logística hasta ingenieros de datos."
   },
   "generate": {
     "title": "Generador de Archivos de Prueba EDIFACT",
     "description": "Genera archivos EDIFACT sintéticos de cualquier versión y tamaño (1-200MB) para pruebas de rendimiento y compresión.",
     "versionLabel": "Versión EDIFACT",
-    "sizeLabel": "Tamaño de Archivo: {sizeMB} MB",
+    "sizeLabel": "Tamaño de Archivo: {{sizeMB}} MB",
     "sizeHint": "Archivos más grandes tardarán más en generarse y pueden afectar el rendimiento del navegador.",
     "generating": "Generando...",
     "button": "Generar Archivo EDIFACT",
-    "progress": "Progreso: {progress}%",
+    "progress": "Progreso: {{progress}}%",
     "ready": "Archivo listo para descargar",
     "readyDescription": "Tu archivo de prueba EDIFACT ha sido generado. Haz clic en el enlace de abajo para descargar.",
-    "download": "Descargar {filename}",
+    "download": "Descargar {{filename}}",
     "downloadHint": "El archivo será automáticamente eliminado de la memoria después de la descarga.",
     "noteTitle": "Nota sobre archivos grandes",
     "noteText": "Generar archivos mayores a 50MB puede causar lentitud o bloqueos del navegador. Considera usar tamaños más pequeños para pruebas. El EDIFACT generado utiliza una estructura sintética simple y puede no ser semánticamente válido para todas las versiones."

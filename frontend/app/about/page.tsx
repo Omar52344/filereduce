@@ -73,17 +73,17 @@ export default function AboutPage() {
       {/* Story/Description */}
       <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-10 border border-gray-200 dark:border-gray-700 mb-16">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-          The FileReduce Story
+          {t('about.storyTitle')}
         </h2>
         <div className="space-y-4 text-gray-700 dark:text-gray-300">
           <p>
-            FileReduce started as a solution to a common problem in EDI processing: static, hard‑coded translation tables that couldn't adapt to new EDIFACT versions. By introducing dynamic translation dictionaries and automatic version detection, we eliminated the need for manual updates and configuration.
+            {t('about.story1')}
           </p>
           <p>
-            The second breakthrough came with the .fra compression format. While working with large JSONL datasets derived from EDIFACT, we noticed extreme redundancy in the structure. By developing a specialized compression algorithm tailored to this pattern, we achieved consistent savings of 95% or more.
+            {t('about.story2')}
           </p>
           <p>
-            Today, FileReduce combines these innovations with a modern web interface, WebAssembly for local processing, and a zero‑config architecture that makes EDIFACT processing accessible to everyone—from logistics managers to data engineers.
+            {t('about.story3')}
           </p>
         </div>
       </div>
