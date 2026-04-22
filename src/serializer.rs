@@ -20,7 +20,7 @@ impl EdifactSerializer {
 
     #[allow(dead_code)]
     fn build_reverse_map(
-        registry: &TranslationRegistry,
+        _registry: &TranslationRegistry,
     ) -> HashMap<String, (String, Option<String>, String, Option<String>)> {
         // TODO: implement when TranslationRegistry exposes iteration
         HashMap::new()

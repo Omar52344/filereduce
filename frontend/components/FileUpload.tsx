@@ -22,6 +22,28 @@ interface ProcessResult {
   contentType?: string;
 }
 
+// Cloud processing types
+interface UploadRequest {
+  file_name: string;
+  file_size: number;
+}
+
+interface UploadResponse {
+  upload_url: string;
+  file_id: string;
+}
+
+interface ProcessingTask {
+  id: string;
+  file_name: string;
+  file_size: number;
+  status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
+  created_at: string;
+  updated_at: string;
+  result_url?: string;
+  error_message?: string;
+}
+
 export default function FileUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<FileType>('unknown');
@@ -31,7 +53,12 @@ export default function FileUpload() {
 
   const [workerReady, setWorkerReady] = useState(false);
   const [alsoCompressToFra, setAlsoCompressToFra] = useState(false);
+  const [processingMode, setProcessingMode] = useState<'local' | 'cloud'>('local');
+  const [cloudProcessing, setCloudProcessing] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<string>('');
+  const [cloudProgress, setCloudProgress] = useState<number>(0);
   const MAX_COMPRESSION_SIZE = 50 * 1024 * 1024; // 50 MB limit for compression
+  const CLOUD_THRESHOLD_BYTES = 100 * 1024 * 1024; // 100 MB threshold for cloud processing
 
   const { t } = useTranslation();
 
@@ -46,6 +73,15 @@ export default function FileUpload() {
     };
     checkReady();
   }, []);
+
+  useEffect(() => {
+    if (file) {
+      const mode = file.size >= CLOUD_THRESHOLD_BYTES ? 'cloud' : 'local';
+      setProcessingMode(mode);
+    } else {
+      setProcessingMode('local');
+    }
+  }, [file]);
 
   const detectFileType = (filename: string): FileType => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -269,6 +305,85 @@ export default function FileUpload() {
     };
   };
 
+  const processWithCloud = async (file: File, fileType: FileType): Promise<ProcessResult> => {
+    const CLOUD_API_BASE = 'http://localhost:8080';
+    let endpoint: string;
+    let contentType: string;
+    let operation: Operation;
+    
+    if (fileType === 'edifact') {
+      endpoint = '/process/edifact';
+      contentType = 'application/jsonl';
+      operation = 'conversion';
+    } else if (fileType === 'jsonl') {
+      endpoint = '/process/jsonl';
+      contentType = 'application/octet-stream';
+      operation = 'compression';
+    } else if (fileType === 'fra') {
+      endpoint = '/decompress/fra';
+      contentType = 'application/jsonl';
+      operation = 'decompression';
+    } else {
+      throw new Error('Unsupported file type for cloud processing');
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5 minutes timeout for large files
+    
+    let response: Response;
+    try {
+      response = await fetch(`${CLOUD_API_BASE}${endpoint}`, {
+        method: 'POST',
+        body: arrayBuffer,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw new Error('Cloud processing timeout: The request took too long. Please try again or use a smaller file.');
+      } else {
+        throw new Error(`Network error: ${err.message}`);
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Cloud processing failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const resultBlob = await response.blob();
+    const processedSize = resultBlob.size;
+    
+    let processedData: any[] | undefined;
+    let processedBlob: Blob | undefined;
+    
+    if (fileType === 'edifact' || fileType === 'fra') {
+      // Parse JSONL for preview
+      const jsonlBytes = new Uint8Array(await resultBlob.arrayBuffer());
+      const { documents } = parseJsonlPartial(jsonlBytes, 1000);
+      processedData = documents;
+      processedBlob = resultBlob;
+    } else {
+      processedBlob = resultBlob;
+    }
+    
+    return {
+      originalSize: file.size,
+      processedSize,
+      processedData,
+      processedBlob,
+      fileName: file.name.replace(/\.[^/.]+$/, ''),
+      fileType,
+      operation,
+      contentType,
+    };
+  };
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
@@ -313,20 +428,36 @@ export default function FileUpload() {
       return;
     }
 
-    // Determine processing method - serverless architecture, only local WASM
-    if (!workerReady) {
-      setError(t('errors.workerNotReady'));
-      setProcessing(false);
-      return;
+    // Determine processing method based on file size (Smart Switching)
+    if (processingMode === 'local') {
+      if (!workerReady) {
+        setError(t('errors.workerNotReady'));
+        setProcessing(false);
+        return;
+      }
+    } else {
+      // Cloud processing mode - set cloud processing state
+      setCloudProcessing(true);
+      setCloudStatus('Preparing upload...');
+      setCloudProgress(0);
     }
     let processedResult: ProcessResult;
 
     try {
-      processedResult = await processWithWorker(file, fileType);
+      if (processingMode === 'local') {
+        processedResult = await processWithWorker(file, fileType);
+      } else {
+        // Cloud processing
+        setCloudStatus('Uploading file to cloud...');
+        setCloudProgress(10);
+        processedResult = await processWithCloud(file, fileType);
+        setCloudStatus('Processing complete');
+        setCloudProgress(100);
+      }
 
 
-      // Optional compression to .fra for EDIFACT files
-      if (alsoCompressToFra && fileType === 'edifact' && processedResult.processedBlob) {
+      // Optional compression to .fra for EDIFACT files (local only)
+      if (processingMode === 'local' && alsoCompressToFra && fileType === 'edifact' && processedResult.processedBlob) {
         try {
           const jsonlBytes = new Uint8Array(await processedResult.processedBlob.arrayBuffer());
           // Check if JSONL is too large for compression in browser
@@ -347,8 +478,18 @@ export default function FileUpload() {
       }
 
       setResult(processedResult);
+      if (processingMode === 'cloud') {
+        setCloudProcessing(false);
+        setCloudStatus('Completed');
+        setCloudProgress(100);
+      }
     } catch (err: any) {
       setError(err.message || 'Processing failed');
+      if (processingMode === 'cloud') {
+        setCloudProcessing(false);
+        setCloudStatus('Error: ' + err.message);
+        setCloudProgress(0);
+      }
     } finally {
       setProcessing(false);
     }
@@ -360,6 +501,10 @@ export default function FileUpload() {
     setResult(null);
     setError(null);
     setAlsoCompressToFra(false);
+    setCloudProcessing(false);
+    setCloudStatus('');
+    setCloudProgress(0);
+    setProcessingMode('local');
   };
 
   const downloadFile = (blob: Blob, filename: string) => {
@@ -454,29 +599,43 @@ export default function FileUpload() {
             </button>
           </div>
           <div className="mt-4 space-y-3">
-            {/*<div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing Mode:</span>
-                <button
-                  onClick={() => setProcessingMode(mode => mode === 'local' ? 'backend' : 'local')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${processingMode === 'local' ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${processingMode === 'local' ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {processingMode === 'local' ? 'Local (WASM)' : 'Backend (API)'}
-                </span>
+                <div className={`px-2 py-1 rounded text-xs font-medium ${processingMode === 'local' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'}`}>
+                  {processingMode === 'local' ? 'Local (WASM)' : 'Cloud (Google Cloud Run)'}
+                </div>
                 {processingMode === 'local' && !workerReady && (
                   <span className="text-xs text-amber-600 dark:text-amber-400">(Worker loading...)</span>
                 )}
                 {processingMode === 'local' && workerReady && (
                   <span className="text-xs text-green-600 dark:text-green-400">✓ Worker ready</span>
                 )}
+                {processingMode === 'cloud' && (
+                  <span className="text-xs text-blue-600 dark:text-blue-400">(File size ≥ 100 MB)</span>
+                )}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {processingMode === 'local' ? 'Processes files locally in your browser' : 'Sends files to backend server'}
+                {processingMode === 'local' ? 'Processes files locally in your browser' : 'Files are sent to cloud for processing'}
               </div>
-            </div>*/}
+            </div>
+            {cloudProcessing && processingMode === 'cloud' && (
+              <div className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-300">Cloud Processing Status</span>
+                  <span className="text-xs text-blue-600 dark:text-blue-400">{cloudStatus}</span>
+                </div>
+                <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${cloudProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
+                  {cloudProgress < 100 ? 'Processing in cloud...' : 'Ready for download'}
+                </p>
+              </div>
+            )}
             {fileType === 'edifact' && (
               <>
                 <div className="flex items-center space-x-2">

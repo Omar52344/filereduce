@@ -11,7 +11,7 @@ categories = ["development-tools", "file-processing", "data-processing"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 filereducelib = { path = "filereducelib" }
 
 [features]
@@ -24,14 +24,14 @@ full = [
     "quick-xml", 
     "tokio", 
     "db", 
-    "serde_yaml", 
-    "async-trait", 
+    "serde_yaml",
     "futures"
 ]
 core = []
-cli = ["clap", "engine_filereduce", "tracing", "tracing-subscriber", "quick-xml", "tokio", "serde_yaml", "async-trait", "futures"]
+cli = ["clap", "engine_filereduce", "tracing", "tracing-subscriber", "quick-xml", "tokio", "serde_yaml", "futures"]
 db = ["tiberius", "bb8", "bb8-tiberius", "tokio-util"]
-api = ["warp", "bytes", "cli"]
+api = ["warp", "cli", "chrono", "gcs"]
+gcs = ["google-cloud-storage", "tokio-stream"]
 
 [dependencies.clap]
 version = "4.5"
@@ -73,7 +73,7 @@ optional = true
 
 [dependencies.async-trait]
 version = "0.1.89"
-optional = true
+optional = false
 
 [dependencies.futures]
 version = "0.3.31"
@@ -93,6 +93,24 @@ optional = true
 
 [dependencies.bytes]
 version = "1"
+optional = false
+
+[dependencies.uuid]
+version = "1.8"
+features = ["v4", "serde"]
+optional = false
+
+[dependencies.chrono]
+version = "0.4"
+features = ["serde"]
+optional = true
+
+[dependencies.google-cloud-storage]
+version = "0.15"
+optional = true
+
+[dependencies.tokio-stream]
+version = "0.1"
 optional = true
 
 [dev-dependencies]

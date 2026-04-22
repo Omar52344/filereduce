@@ -28,6 +28,8 @@ pub mod cli;
 #[cfg(feature = "full")]
 pub mod config;
 
+pub mod storage;
+
 pub mod model {
     pub mod document;
     pub mod streaming;

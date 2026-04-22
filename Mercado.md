@@ -53,3 +53,104 @@ Formato .fra desconocido: Nadie quiere un formato cerrado. Solución: Publica la
 Monetización lenta: Freemium puede tardar en convertir. Solución: Los pilotos no son "gratis para siempre", son "gratis por 90 días con compromiso de feedback". Si no convierten, no son clientes, son usuarios.
 Mi recomendación concreta: Lanza el programa piloto con 5 cupos solo para logísticas/3PLs europeos (donde EDIFACT es estándar). Ofreceles onboarding personalizado por video. Con 3 case studies de reducción de tiempo de procesamiento, tendrás credibilidad para escalar a paid.
 ¿Quieres que profundice en algún punto específico — la estrategia de precios, el pitch de ventas, o la arquitectura del .fra?
+
+
+
+
+/////////////////
+El problema es clásico: WASM en navegador tiene límites de memoria (~2-4GB teóricos, ~500MB prácticos)  y todo el archivo debe pasar por el heap lineal de WASM. Para archivos >100MB en compresión .fra, estás forzado a cargar todo en memoria antes de procesar. La solución no es "más WASM", es arquitectura híbrida inteligente con costo marginal cero para ti.
+🎯 Decisión de arquitectura: "WASM para demo, API para producción"
+Tu producto ya tiene tres modos (WASM web, API Rust, CLI). El error es intentar que el modo gratuito resuelva todos los casos. La arquitectura correcta es segmentar por valor, no por features:
+Table
+Modo	Tamaño archivo	Costo para ti	Precio para cliente	Propósito
+WASM Browser	< 50 MB	$0 (client-side)	Gratis	Demo, POC, archivos ocasionales
+API Serverless	50 MB - 2 GB	~$0.001 por job	$0.50/job o plan Pro	Producción real, automatización
+CLI Self-hosted	> 2 GB o ilimitado	$0 (corre en su infra)	$99 licencia o Enterprise	Grandes volúmenes, compliance
+🔧 Solución técnica para el cuello de botella >100MB
+Opción A: Streaming chunked en WASM (complejo, pero posible)
+Puedes procesar JSONL en chunks usando la Streams API del navegador  y pasar buffers de ~1MB a WASM sin cargar todo el archivo:
+JavaScript
+Copy
+// JS: lectura por chunks con backpressure
+const reader = file.stream().getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { value, done } = await reader.read();
+  if (done) break;
+  
+  // Pasar chunk a WASM, mantener estado de compresión entre calls
+  wasm.process_chunk(value, is_last_chunk);
+}
+Problema: Tu formato .fra usa diccionario compartido y zstd por bloques. El estado del compresor zstd debe persistir entre chunks, lo cual wasm-bindgen no maneja bien para streams. Es técnicamente viable pero complejo de debuggear.
+Veredicto: No lo hagas. Es "clever code" que te quitará semanas de desarrollo por un caso edge del plan gratis.
+Opción B: "Auto-escalado" transparente (recomendada)
+Cuando el archivo supera 50MB, el frontend detecta y sube a tu API automáticamente:
+TypeScript
+Copy
+// En tu worker.js
+if (file.size > 50 * 1024 * 1024) {
+  // Modo "cloud burst": sube a API serverless
+  const stream = file.stream();
+  await fetch('/api/v1/process', {
+    method: 'POST',
+    body: stream, // Streaming upload, no carga en memoria
+    headers: { 'X-Mode': 'jsonl-to-fra', 'X-File-Size': file.size }
+  });
+} else {
+  // Modo WASM local
+  wasm.process_file(file);
+}
+Ventajas:
+El usuario no elige, el sistema decide
+Mantienes el "zero-knowledge" para archivos pequeños (tu pitch de privacidad)
+Los grandes archivos pagan naturalmente por el costo de infraestructura
+💰 Modelo de costos serverless para mínimo gasto
+Para no quemar capital, usa Cloudflare Workers + R2 o Vercel Edge Functions:
+Table
+Servicio	Costo por 1GB procesado	Por qué sirve
+Cloudflare Workers	$0.50/million requests + $0.015/GB egress	WASM nativo, 0ms cold start, streaming 
+Vercel Edge	$0.15/GB-hours	Tu frontend ya está ahí, integración trivial
+Fly.io	~$2/GB RAM/mes	Para jobs largos que no encajan en 50ms de edge
+Cálculo realista:
+100 clientes Pro procesando 10 archivos de 500MB/mes cada uno
+= 500GB/mes procesados
+Cloudflare Workers: ~$15/mes en compute + $7.50 egress = $22.50/mes
+Facturas a clientes: 100 × $29/mes = $2,900/mes
+Margen: 99.2%
+🏗️ Implementación mínima viable (2 semanas)
+Semana 1: API serverless "dumbed down"
+Endpoint único /api/v1/convert que recibe multipart/stream
+Lógica: recibe JSONL → comprime con tu crate Rust existente → devuelve .fra
+Auth: API key simple (Stripe webhook para generar keys en pago)
+Rate limit: 1 req/min en gratis, ilimitado en Pro
+Semana 2: Frontend "smart router"
+TypeScript
+Copy
+// lib/processor.ts
+export async function processFile(file: File, userTier: 'free' | 'pro') {
+  if (file.size < 50 * 1024 * 1024 && userTier === 'free') {
+    return await wasmProcess(file); // 100% local
+  }
+  
+  if (userTier === 'free' && file.size >= 50 * 1024 * 1024) {
+    throw new Error('Archivos >50MB requieren plan Pro. Upgrade aquí.');
+  }
+  
+  // Pro users: cloud burst
+  return await apiProcess(file); // Streaming a serverless
+}
+📊 Tabla de decisión para el usuario
+Table
+Escenario	Tamaño	Dónde procesa	Precio	Tiempo
+Developer testeando	5MB EDIFACT	Navegador (WASM)	Gratis	2s
+Logística semanal	200MB JSONL	Cloudflare Edge	$0.50/job	15s
+Enterprise mensual	5GB JSONL	CLI self-hosted	$99/mes licencia	3min local
+⚠️ Qué NO hacer
+No intentes sharding en WASM: Dividir el JSONL en chunks, comprimir por separado y concatenar .fra rompe tu formato (diccionario compartido no se puede partir). 
+No uses backend tradicional (EC2/VPS): Un servidor $20/mes se satura con 3 usuarios subiendo 1GB simultáneo. Serverless escala a cero.
+No cobres por GB al principio: Friction alta. Cobrar por "jobs" o plan fijo reduce fricción de decisión.
+🚀 Pitch de ventas con esta arquitectura
+"FileReduce es el único procesador EDIFACT que respeta tu privacidad: archivos pequeños nunca salen de tu navegador. Cuando necesitas potencia para grandes volúmenes, nuestro edge computing procesa en segundos sin instalar nada. Empieza gratis, escala cuando crezcas."
+Esto resuelve el dilema de confianza: no pides datos sin demostrar valor primero (WASM gratis), y cobras cuando el valor es obvio (archivos grandes que les ahorran horas de trabajo manual).
+¿Quieres que profundice en la implementación del endpoint serverless en Cloudflare Workers con tu crate Rust existente, o en la lógica de "smart routing" del frontend?

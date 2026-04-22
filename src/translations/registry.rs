@@ -1,6 +1,5 @@
 use crate::error::{FileReduceError, Result};
 use crate::translations::config::*;
-use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::Command;

@@ -11,7 +11,7 @@ use tiberius;
 #[derive(Error, Debug)]
 pub enum FileReduceError {
     #[error("IO error: {0}")]
-    Io(#[from] io::Error),
+    Io(io::Error),
 
     #[error("Parse error: {0}")]
     Parse(String),
@@ -20,7 +20,7 @@ pub enum FileReduceError {
     Query(String),
 
     #[error("Serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
+    Serialization(serde_json::Error),
 
     #[cfg(feature = "full")]
     #[error("XML error: {0}")]
@@ -46,6 +46,18 @@ pub enum FileReduceError {
     #[cfg(feature = "db")]
     #[error("Connection pool error: {0}")]
     Pool(#[from] RunError<bb8_tiberius::Error>),
+}
+
+impl From<serde_json::Error> for FileReduceError {
+    fn from(err: serde_json::Error) -> Self {
+        FileReduceError::Serialization(err)
+    }
+}
+
+impl From<std::io::Error> for FileReduceError {
+    fn from(err: std::io::Error) -> Self {
+        FileReduceError::Io(err)
+    }
 }
 
 pub type Result<T> = std::result::Result<T, FileReduceError>;
