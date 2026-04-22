@@ -31,6 +31,7 @@ export default function FileUpload() {
 
   const [workerReady, setWorkerReady] = useState(false);
   const [alsoCompressToFra, setAlsoCompressToFra] = useState(false);
+  const MAX_COMPRESSION_SIZE = 50 * 1024 * 1024; // 50 MB limit for compression
 
   const { t } = useTranslation();
 
@@ -70,6 +71,108 @@ export default function FileUpload() {
     return false;
   };
 
+  const parseJsonlPartial = (
+    jsonlBytes: Uint8Array,
+    maxDocuments: number = 1000
+  ): { documents: any[]; totalLines: number; linesProcessed: number; jsonParseErrors: number } => {
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    const documents: any[] = [];
+    let lineStart = 0;
+    let totalLines = 0;
+    let linesProcessed = 0;
+    let linesWithContent = 0;
+    let jsonParseErrors = 0;
+    
+    console.log(`[parseJsonlPartial] Starting parse of ${jsonlBytes.length} bytes`);
+    const MAX_SCAN_BYTES = 10 * 1024 * 1024; // Limit scanning to first 10MB for performance
+    const scanLimit = Math.min(jsonlBytes.length, MAX_SCAN_BYTES);
+    
+    for (let i = 0; i < scanLimit && documents.length < maxDocuments; i++) {
+      if (jsonlBytes[i] === 0x0A) { // newline character
+        totalLines++;
+        if (lineStart < i) {
+          // Check if previous character is carriage return
+          const end = jsonlBytes[i - 1] === 0x0D ? i - 1 : i;
+          if (end > lineStart) {
+            linesProcessed++;
+            const lineBytes = jsonlBytes.subarray(lineStart, end);
+            const lineText = decoder.decode(lineBytes, { stream: false });
+            if (lineText.trim()) {
+              linesWithContent++;
+              try {
+                const doc = JSON.parse(lineText);
+                documents.push(doc);
+              } catch (e: any) {
+                jsonParseErrors++;
+                // Log first few errors for debugging
+                if (jsonParseErrors <= 3) {
+                  console.warn(`[parseJsonlPartial] JSON parse error on line ${totalLines}:`, e.message, 'Text preview:', lineText.substring(0, 100));
+                }
+              }
+            }
+          }
+        }
+        lineStart = i + 1;
+      }
+    }
+    
+    // Count last line within scan limit if no trailing newline
+    if (lineStart < scanLimit) {
+      totalLines++;
+      // Try to process the last line if we didn't encounter a newline
+      if (documents.length < maxDocuments) {
+        linesProcessed++;
+        const lineBytes = jsonlBytes.subarray(lineStart, scanLimit);
+        const lineText = decoder.decode(lineBytes, { stream: false });
+        if (lineText.trim()) {
+          linesWithContent++;
+          try {
+            const doc = JSON.parse(lineText);
+            documents.push(doc);
+          } catch (e: any) {
+            jsonParseErrors++;
+            if (jsonParseErrors <= 3) {
+              console.warn(`[parseJsonlPartial] JSON parse error on last line:`, e.message, 'Text preview:', lineText.substring(0, 100));
+            }
+          }
+        }
+      }
+    }
+    
+    console.log(`[parseJsonlPartial] Result: totalLines=${totalLines}, linesProcessed=${linesProcessed}, linesWithContent=${linesWithContent}, documentsFound=${documents.length}, jsonParseErrors=${jsonParseErrors}`);
+    
+    // If no newlines found and no documents parsed, try to parse entire scanned content as single JSON
+    // Skip this if the file is larger than scan limit (i.e., we haven't seen the full content)
+    if (documents.length === 0 && linesWithContent === 0 && scanLimit > 0 && scanLimit === jsonlBytes.length) {
+      const entireText = decoder.decode(jsonlBytes.subarray(0, Math.min(scanLimit, 1024 * 1024)), { stream: false });
+      if (entireText.trim()) {
+        linesWithContent++;
+        linesProcessed++;
+        try {
+          const doc = JSON.parse(entireText);
+          documents.push(doc);
+          totalLines = 1;
+          console.log(`[parseJsonlPartial] Parsed as single JSON document (no newlines detected)`);
+        } catch (e: any) {
+          jsonParseErrors++;
+          console.warn(`[parseJsonlPartial] Failed to parse as single JSON:`, e.message, 'Preview:', entireText.substring(0, 200));
+        }
+      }
+    }
+    
+    if (linesProcessed > 0 && documents.length === 0) {
+      // Try to decode and log first line for debugging
+      const firstNewline = jsonlBytes.indexOf(0x0A);
+      if (firstNewline !== -1 && firstNewline > 0) {
+        const firstLineBytes = jsonlBytes.subarray(0, Math.min(firstNewline, 200));
+        const firstLineText = decoder.decode(firstLineBytes, { stream: false });
+        console.log(`[parseJsonlPartial] First line preview (${firstLineBytes.length} bytes):`, firstLineText);
+      }
+    }
+    
+    return { documents, totalLines, linesProcessed, jsonParseErrors };
+  };
+
   const processWithWorker = async (file: File, fileType: FileType): Promise<ProcessResult> => {
     const client = getWasmWorkerClient();
     const arrayBuffer = await file.arrayBuffer();
@@ -98,28 +201,54 @@ export default function FileUpload() {
     if (fileType === 'edifact' || fileType === 'fra') {
       // Result is JSONL (Uint8Array or string)
       const jsonlData = result.data;
-      const jsonlBytes = jsonlData instanceof Uint8Array ? jsonlData : new TextEncoder().encode(jsonlData as string);
+      if (!jsonlData) {
+        throw new Error('No output data received from conversion');
+      }
+       const jsonlBytes = jsonlData instanceof Uint8Array ? jsonlData : new TextEncoder().encode(jsonlData as string);
       processedSize = jsonlBytes.length;
+      console.log(`[processWithWorker] jsonlData type: ${typeof jsonlData}, isUint8Array: ${jsonlData instanceof Uint8Array}, jsonlBytes size: ${jsonlBytes.length}`);
+      // Log first 100 bytes for debugging
+      if (jsonlBytes.length > 0) {
+        const preview = Array.from(jsonlBytes.slice(0, Math.min(100, jsonlBytes.length)))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join(' ');
+        console.log(`[processWithWorker] First 100 bytes (hex): ${preview}`);
+        // Also try to decode as text
+        const decoder = new TextDecoder('utf-8', { fatal: false });
+        const textPreview = decoder.decode(jsonlBytes.slice(0, Math.min(200, jsonlBytes.length)));
+        console.log(`[processWithWorker] First 200 chars as text: "${textPreview}"`);
+      }
       if (processedSize === 0) {
         throw new Error('Output file is empty. The EDIFACT file may not contain valid segments.');
       }
-      const text = new TextDecoder().decode(jsonlBytes);
-      const lines = text.split('\n').filter(line => line.trim());
-      processedData = lines.map(line => {
-        try {
-          return JSON.parse(line);
-        } catch (e) {
-          console.warn('Failed to parse JSONL line:', line);
-          return null;
+      
+      // For large files, only parse a subset for preview
+      const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+      const MAX_PREVIEW_DOCUMENTS = 1000;
+      
+        const { documents, totalLines, linesProcessed, jsonParseErrors } = parseJsonlPartial(jsonlBytes, MAX_PREVIEW_DOCUMENTS);
+      processedData = documents;
+      console.log(`[processWithWorker] Parse results: documents=${documents.length}, totalLines=${totalLines}, linesProcessed=${linesProcessed}`);
+      
+      // Only validate if we got zero documents but we attempted to parse some lines
+      const isLargeFile = jsonlBytes.length > LARGE_FILE_THRESHOLD;
+      if (processedData.length === 0 && linesProcessed > 0) {
+        // For large files, parsing may fail due to scan limit; don't treat as error
+        if (!isLargeFile || jsonParseErrors < linesProcessed) {
+          // Only throw if it's a small file OR not all lines failed to parse (some may be valid)
+          throw new Error('No valid JSONL lines produced. The EDIFACT file may not be compatible.');
+        } else {
+          console.warn(`[processWithWorker] Large file (${jsonlBytes.length} bytes) could not be parsed partially, but may still be valid JSONL.`);
         }
-      }).filter(obj => obj !== null);
-      if (processedData.length === 0) {
-        throw new Error('No valid JSONL lines produced. The EDIFACT file may not be compatible.');
       }
+      
       contentType = 'application/jsonl';
       processedBlob = new Blob([jsonlBytes.slice()], { type: 'application/jsonl' });
     } else if (fileType === 'jsonl') {
       // Result is .fra (Uint8Array)
+      if (!result.data) {
+        throw new Error('No output data received from compression');
+      }
       processedBlob = new Blob([(result.data as any).slice()], { type: 'application/octet-stream' });
       processedSize = processedBlob.size;
       if (processedSize === 0) {
@@ -200,10 +329,16 @@ export default function FileUpload() {
       if (alsoCompressToFra && fileType === 'edifact' && processedResult.processedBlob) {
         try {
           const jsonlBytes = new Uint8Array(await processedResult.processedBlob.arrayBuffer());
-          const client = getWasmWorkerClient();
-          const compressResult = await client.compressJsonl(jsonlBytes);
-          if (compressResult.success && compressResult.data) {
-            processedResult.processedFraBlob = new Blob([compressResult.data.slice()], { type: 'application/octet-stream' });
+          // Check if JSONL is too large for compression in browser
+          if (jsonlBytes.length > MAX_COMPRESSION_SIZE) {
+            console.warn(`JSONL too large for compression (${jsonlBytes.length} bytes > ${MAX_COMPRESSION_SIZE} bytes). Skipping compression.`);
+            // Optionally set a warning message for the user
+          } else {
+            const client = getWasmWorkerClient();
+            const compressResult = await client.compressJsonl(jsonlBytes);
+            if (compressResult.success && compressResult.data) {
+              processedResult.processedFraBlob = new Blob([compressResult.data.slice()], { type: 'application/octet-stream' });
+            }
           }
         } catch (err) {
           console.warn('Failed to compress to .fra:', err);
@@ -343,18 +478,36 @@ export default function FileUpload() {
               </div>
             </div>*/}
             {fileType === 'edifact' && (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={alsoCompressToFra}
-                  onChange={(e) => setAlsoCompressToFra(e.target.checked)}
-                  id="compress-to-fra"
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="compress-to-fra" className="text-sm text-gray-700 dark:text-gray-300">
-                   {t('home.processing.compressToFra')}
-                </label>
-              </div>
+              <>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={alsoCompressToFra}
+                    onChange={(e) => setAlsoCompressToFra(e.target.checked)}
+                    disabled={file.size > MAX_COMPRESSION_SIZE}
+                    id="compress-to-fra"
+                    className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${file.size > MAX_COMPRESSION_SIZE ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  />
+                  <label htmlFor="compress-to-fra" className={`text-sm ${file.size > MAX_COMPRESSION_SIZE ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                     {t('home.processing.compressToFra')}
+                     {file.size > MAX_COMPRESSION_SIZE && ' (Disabled - file too large)'}
+                  </label>
+                </div>
+                {file.size > MAX_COMPRESSION_SIZE && (
+                  <div className="mt-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2">
+                    <p className="text-yellow-800 dark:text-yellow-300 text-xs">
+                      File is too large ({Math.round(file.size / (1024 * 1024))} MB) for compression in browser. Maximum size for compression is 50 MB. Use the CLI tool for larger files.
+                    </p>
+                  </div>
+                )}
+                {alsoCompressToFra && file && file.size <= MAX_COMPRESSION_SIZE && file.size > 10 * 1024 * 1024 && (
+                  <div className="mt-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2">
+                    <p className="text-yellow-800 dark:text-yellow-300 text-xs">
+                      File is large ({Math.round(file.size / (1024 * 1024))} MB). Compression may take longer.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
             <button
               onClick={handleProcess}

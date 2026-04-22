@@ -91,6 +91,15 @@ pub fn convert_edi_to_jsonl_simple(edi_text: &str) -> Result<String, JsValue> {
 
 #[wasm_bindgen]
 pub fn compress_jsonl_simple(jsonl_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
+    // Limit size for browser compression
+    const MAX_SIZE: usize = 50 * 1024 * 1024; // 50 MB
+    if jsonl_bytes.len() > MAX_SIZE {
+        return Err(JsValue::from_str(&format!(
+            "JSONL too large for browser compression ({} bytes > {} bytes). Use the CLI tool for larger files.",
+            jsonl_bytes.len(), MAX_SIZE
+        )));
+    }
+    
     let mut compressor = FileReduceCompressor::new();
     let mut output = std::io::Cursor::new(Vec::new());
     let input = std::io::Cursor::new(jsonl_bytes);
@@ -101,6 +110,15 @@ pub fn compress_jsonl_simple(jsonl_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
 
 #[wasm_bindgen]
 pub fn decompress_fra_simple(fra_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
+    // Limit size for browser decompression (compressed .fra files)
+    const MAX_SIZE: usize = 200 * 1024 * 1024; // 200 MB
+    if fra_bytes.len() > MAX_SIZE {
+        return Err(JsValue::from_str(&format!(
+            ".fra file too large for browser decompression ({} bytes > {} bytes). Use the CLI tool for larger files.",
+            fra_bytes.len(), MAX_SIZE
+        )));
+    }
+    
     let mut decompressor = FileReduceDecompressor::new();
     let mut output = std::io::Cursor::new(Vec::new());
     let input = std::io::Cursor::new(fra_bytes);

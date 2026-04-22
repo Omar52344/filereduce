@@ -57,6 +57,16 @@ async function processEdifact(fileData) {
     }
     
     console.log(`[Worker] Conversion complete, output size: ${resultBytes.length} bytes`);
+    // Log first 100 bytes for debugging
+    if (resultBytes.length > 0) {
+      const hexPreview = Array.from(resultBytes.slice(0, Math.min(100, resultBytes.length)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(' ');
+      console.log(`[Worker] First 100 bytes (hex): ${hexPreview}`);
+      const textPreview = new TextDecoder('utf-8', { fatal: false })
+        .decode(resultBytes.slice(0, Math.min(200, resultBytes.length)));
+      console.log(`[Worker] First 200 chars as text: "${textPreview}"`);
+    }
     
     return {
       success: true,

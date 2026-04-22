@@ -27,6 +27,7 @@ export default function FraCompression() {
   const [error, setError] = useState<string | null>(null);
 
   const [workerReady, setWorkerReady] = useState(false);
+  const MAX_COMPRESSION_SIZE = 50 * 1024 * 1024; // 50 MB limit for compression
 
   const { t } = useTranslation();
 
@@ -50,12 +51,26 @@ export default function FraCompression() {
   };
 
   const validateJsonlContent = async (file: File): Promise<boolean> => {
+    // For large files, skip rigorous validation
+    const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024;
+    if (file.size > LARGE_FILE_THRESHOLD) {
+      return true;
+    }
     // Read first 1024 bytes to check for JSONL structure
     const slice = file.slice(0, Math.min(1024, file.size));
     const text = await slice.text();
     // JSONL files have each line as a JSON object; at least one line should be valid JSON
     const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length === 0) return false;
+    if (lines.length === 0) {
+      // Maybe the file is a single JSON object without newline
+      // Check if text starts with '{' or '['
+      const trimmed = text.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        // Accept as potential JSONL; validation will happen during processing
+        return true;
+      }
+      return false;
+    }
     // Check first few lines
     for (let i = 0; i < Math.min(lines.length, 3); i++) {
       try {
@@ -161,6 +176,13 @@ export default function FraCompression() {
     setProcessing(true);
     setError(null);
 
+    // Validate file size for compression
+    if (fileType === 'jsonl' && file.size > MAX_COMPRESSION_SIZE) {
+      setError(`File is too large (${Math.round(file.size / (1024 * 1024))} MB) for compression in browser. Maximum size for compression is 50 MB. Use the CLI tool for larger files.`);
+      setProcessing(false);
+      return;
+    }
+
     const useLocal = workerReady;
     let processedResult: ProcessResult;
 
@@ -241,8 +263,22 @@ export default function FraCompression() {
             >
                 {t('common.remove')}
             </button>
-          </div>
-          <div className="mt-4 space-y-3">
+           </div>
+           {fileType === 'jsonl' && file.size > MAX_COMPRESSION_SIZE && (
+             <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+               <p className="text-yellow-800 dark:text-yellow-300 text-sm">
+                 File is too large ({Math.round(file.size / (1024 * 1024))} MB) for compression in browser. Maximum size for compression is 50 MB. Use the CLI tool for larger files.
+               </p>
+             </div>
+           )}
+           {fileType === 'fra' && file.size > 100 * 1024 * 1024 && (
+             <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+               <p className="text-yellow-800 dark:text-yellow-300 text-sm">
+                 File is large ({Math.round(file.size / (1024 * 1024))} MB). Decompression may take longer.
+               </p>
+             </div>
+           )}
+           <div className="mt-4 space-y-3">
             {/*<div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing Mode:</span>
@@ -266,13 +302,13 @@ export default function FraCompression() {
                 {processingMode === 'local' ? 'Processes files locally in your browser' : 'Sends files to backend server'}
               </div>
             </div>*/}
-            <button
-              onClick={handleProcess}
-              disabled={processing}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-               {processing ? t('common.processing') : (fileType === 'fra' ? t('compression.actions.decompressToJSONL') : t('compression.actions.compressToFRA'))}
-            </button>
+             <button
+               onClick={handleProcess}
+               disabled={processing || (fileType === 'jsonl' && file.size > MAX_COMPRESSION_SIZE)}
+               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+                {processing ? t('common.processing') : (fileType === 'fra' ? t('compression.actions.decompressToJSONL') : t('compression.actions.compressToFRA'))}
+             </button>
           </div>
         </div>
       )}
