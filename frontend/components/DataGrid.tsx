@@ -68,14 +68,14 @@ export default function DataGrid({ data }: DataGridProps) {
     {
       header: 'Date',
       accessorKey: 'document_date',
-      cell: ({ row }) => row.original.document_date || '—',
+      cell: ({ row }) => row.original.document_date || '\u2014',
     },
     {
       header: 'Lines',
       accessorKey: 'lines',
       cell: ({ row }) => (
         <div className="text-center">
-          <span className="font-semibold">{row.original.lines.length}</span>
+          <span className="font-semibold">{row.original.lines?.length ?? 0}</span>
           {row.original.line_count_check && (
             <span className="text-xs text-gray-500 ml-1">
               ({row.original.line_count_check})
@@ -87,12 +87,12 @@ export default function DataGrid({ data }: DataGridProps) {
     {
       header: 'Buyer',
       accessorKey: 'buyer',
-      cell: ({ row }) => row.original.buyer || '—',
+      cell: ({ row }) => row.original.buyer || '\u2014',
     },
     {
       header: 'Seller',
       accessorKey: 'seller',
-      cell: ({ row }) => row.original.seller || '—',
+      cell: ({ row }) => row.original.seller || '\u2014',
     },
     {
       header: 'Currency',

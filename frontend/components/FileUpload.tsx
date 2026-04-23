@@ -364,8 +364,27 @@ export default function FileUpload() {
       const errorText = await response.text();
       throw new Error(`Cloud processing failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
+
+    // The /process/edifact endpoint returns JSON with task status and download URL
+    const processResult = await response.json();
     
-    const resultBlob = await response.blob();
+    if (processResult.status !== 'completed') {
+      throw new Error(`Cloud processing failed: ${processResult.status} - ${processResult.error || 'Unknown error'}`);
+    }
+    
+    // Extract file_id from download_url: "/download/{file_id}" -> file_id
+    const fileId = processResult.download_url?.split('/').pop();
+    if (!fileId) {
+      throw new Error('Cloud processing: missing file_id in response');
+    }
+    
+    // Fetch the actual processed data
+    const dataResponse = await fetch(`${CLOUD_API_BASE}/data/${fileId}`);
+    if (!dataResponse.ok) {
+      throw new Error(`Failed to download processed data: ${dataResponse.status}`);
+    }
+    
+    const resultBlob = await dataResponse.blob();
     const processedSize = resultBlob.size;
     
     let processedData: any[] | undefined;

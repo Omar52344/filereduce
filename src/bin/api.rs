@@ -128,6 +128,11 @@ async fn main() {
         .and(with_state(state.clone()))
         .and_then(download_handler);
 
+    let data = warp::path!("data" / Uuid)
+        .and(warp::get())
+        .and(with_state(state.clone()))
+        .and_then(data_handler);
+
     let status = warp::path!("status" / Uuid)
         .and(warp::get())
         .and(with_state(state.clone()))
@@ -151,10 +156,16 @@ async fn main() {
         .or(convert_json_to_edi)
         .or(upload_request)
         .or(download)
+        .or(data)
         .or(status)
         .or(events)
         .or(process_cloud)
-        .with(warp::cors().allow_any_origin())
+        .with(warp::cors()
+            .allow_any_origin()
+            .allow_methods(&[warp::http::Method::GET, warp::http::Method::POST, warp::http::Method::OPTIONS])
+            .allow_headers(vec!["content-type", "authorization", "x-requested-with"])
+            .max_age(86400), // Cache preflight for 24 hours
+        )
         .with(warp::log("filereduce::api"));
 
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string()).parse().unwrap();
@@ -182,6 +193,23 @@ async fn download_handler(file_id: Uuid, state: AppState) -> Result<impl Reply, 
         Err(e) => {
             eprintln!("Download error: {}", e);
             Ok(warp::reply::with_status(warp::reply::json(&serde_json::json!({ "error": e.to_string() })), warp::http::StatusCode::NOT_FOUND).into_response())
+        }
+    }
+}
+
+async fn data_handler(file_id: Uuid, state: AppState) -> Result<impl Reply, Rejection> {
+    match state.storage.retrieve_bytes(file_id).await {
+        Ok(bytes) => Ok(warp::reply::with_header(
+            bytes.to_vec(),
+            warp::http::header::CONTENT_TYPE,
+            "application/octet-stream",
+        ).into_response()),
+        Err(e) => {
+            eprintln!("Data retrieval error: {}", e);
+            Ok(warp::reply::with_status(
+                warp::reply::json(&serde_json::json!({ "error": format!("File not found: {}", e) })),
+                warp::http::StatusCode::NOT_FOUND,
+            ).into_response())
         }
     }
 }
