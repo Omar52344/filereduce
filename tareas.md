@@ -385,7 +385,6 @@ Rendimiento: Conversión de 100MB de EDIFACT a JSONL en menos de 5 segundos en e
 
 Compresión: Mantener ratios de ahorro superiores al 95% usando el formato .fra.
 
-Autonomía: El sistema debe ser capaz de auto-proponer traducciones para el 80% de las etiquetas nuevas encontradas.
 
 ## ✅ Estado Actual del Proyecto
 

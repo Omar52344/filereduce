@@ -541,6 +541,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -609,6 +615,7 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 name = "filereduce"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "async-trait",
  "bb8",
  "bb8-tiberius",
@@ -616,6 +623,7 @@ dependencies = [
  "chrono",
  "clap",
  "criterion",
+ "dotenv",
  "engine_filereduce",
  "filereducelib",
  "futures",

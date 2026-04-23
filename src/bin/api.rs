@@ -1,5 +1,6 @@
 
 use bytes::Bytes;
+
 use filereduce::serializer::EdifactSerializer;
 use filereduce::storage::{Storage, MemoryStorage, UploadRequest};
 #[cfg(feature = "gcs")]
@@ -9,10 +10,15 @@ use std::collections::HashMap;
 use serde::Serialize;
 use std::convert::Infallible;
 use std::env;
+use chrono::{DateTime, Utc};
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, broadcast};
 use uuid::Uuid;
-use warp::{Filter, Rejection, Reply};
+use warp::{Filter, Rejection, Reply, sse};
+
+
+
+
 
 #[derive(Clone, Debug, Serialize)]
 enum TaskStatus {
@@ -22,20 +28,33 @@ enum TaskStatus {
     Failed { error: String },
 }
 
+#[derive(Clone, Debug, Serialize)]
+struct TaskEvent {
+    task_id: Uuid,
+    status: TaskStatus,
+    timestamp: DateTime<Utc>,
+}
+
 #[derive(Clone)]
 struct AppState {
     registry: Arc<RwLock<TranslationRegistry>>,
     storage: Arc<dyn Storage>,
     tasks: Arc<RwLock<HashMap<Uuid, TaskStatus>>>,
+    broadcast_tx: broadcast::Sender<TaskEvent>,
 }
 
 #[tokio::main]
 async fn main() {
+    match dotenv::dotenv() {
+        Ok(path) => println!("Loaded .env from {:?}", path),
+        Err(e) => println!("Failed to load .env: {}", e),
+    }
     let registry = TranslationRegistry::new().expect("Failed to load translations.json");
     
     let storage: Arc<dyn Storage> = {
         #[cfg(feature = "gcs")]
         {
+            println!("GCS_BUCKET env: {:?}", env::var("GCS_BUCKET"));
             if let Ok(bucket) = env::var("GCS_BUCKET") {
                 match GcsStorage::new(bucket.clone(), None, None).await {
                     Ok(gcs_storage) => {
@@ -48,6 +67,7 @@ async fn main() {
                     }
                 }
             } else {
+                println!("Using MemoryStorage (GCS bucket not defined)");
                 Arc::new(MemoryStorage::new())
             }
         }
@@ -57,10 +77,12 @@ async fn main() {
         }
     };
 
+    let (broadcast_tx, _) = broadcast::channel(100);
     let state = AppState {
         registry: Arc::new(RwLock::new(registry)),
         storage,
         tasks: Arc::new(RwLock::new(HashMap::new())),
+        broadcast_tx,
     };
 
     let health = warp::path!("health")
@@ -109,6 +131,11 @@ async fn main() {
         .and(with_state(state.clone()))
         .and_then(status_handler);
 
+    // let events = warp::path!("events")
+    //     .and(warp::get())
+    //     .and(with_state(state.clone()))
+    //     .and_then(events_handler);
+
     let routes = health
         .or(reload)
         .or(process_edifact)
@@ -118,6 +145,7 @@ async fn main() {
         .or(upload_request)
         .or(download)
         .or(status)
+        // .or(events)
         .with(warp::cors().allow_any_origin())
         .with(warp::log("filereduce::api"));
 
@@ -160,6 +188,21 @@ async fn status_handler(task_id: Uuid, state: AppState) -> Result<impl Reply, Re
         ).into_response()),
     }
 }
+
+/* async fn events_handler(state: AppState) -> Result<impl Reply, Rejection> {
+    let mut rx = state.broadcast_tx.subscribe();
+    let stream = async_stream::stream! {
+        // Send initial connection event
+        yield Ok(sse::Event::default().data("connected"));
+        while let Ok(event) = rx.recv().await {
+            match serde_json::to_string(&event) {
+                Ok(data) => yield Ok(sse::Event::default().data(data)),
+                Err(e) => eprintln!("Failed to serialize event: {}", e),
+            }
+        }
+    };
+    Ok(reply::sse(stream))
+} */
 
 async fn reload_translations_handler(state: AppState) -> Result<impl Reply, Rejection> {
     let registry_arc = state.registry.clone();
