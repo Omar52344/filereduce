@@ -131,10 +131,10 @@ async fn main() {
         .and(with_state(state.clone()))
         .and_then(status_handler);
 
-    // let events = warp::path!("events")
-    //     .and(warp::get())
-    //     .and(with_state(state.clone()))
-    //     .and_then(events_handler);
+    let events = warp::path!("events")
+        .and(warp::get())
+        .and(with_state(state.clone()))
+        .and_then(events_handler);
 
     let routes = health
         .or(reload)
@@ -145,7 +145,7 @@ async fn main() {
         .or(upload_request)
         .or(download)
         .or(status)
-        // .or(events)
+        .or(events)
         .with(warp::cors().allow_any_origin())
         .with(warp::log("filereduce::api"));
 
@@ -189,20 +189,20 @@ async fn status_handler(task_id: Uuid, state: AppState) -> Result<impl Reply, Re
     }
 }
 
-/* async fn events_handler(state: AppState) -> Result<impl Reply, Rejection> {
+async fn events_handler(state: AppState) -> Result<impl Reply, Rejection> {
     let mut rx = state.broadcast_tx.subscribe();
     let stream = async_stream::stream! {
         // Send initial connection event
-        yield Ok(sse::Event::default().data("connected"));
+            yield Ok::<sse::Event, std::convert::Infallible>(sse::Event::default().data("connected"));
         while let Ok(event) = rx.recv().await {
             match serde_json::to_string(&event) {
-                Ok(data) => yield Ok(sse::Event::default().data(data)),
+                Ok(data) => yield Ok::<sse::Event, std::convert::Infallible>(sse::Event::default().data(data)),
                 Err(e) => eprintln!("Failed to serialize event: {}", e),
             }
         }
     };
-    Ok(reply::sse(stream))
-} */
+    Ok(sse::reply(stream))
+}
 
 async fn reload_translations_handler(state: AppState) -> Result<impl Reply, Rejection> {
     let registry_arc = state.registry.clone();
