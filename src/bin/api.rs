@@ -6,10 +6,12 @@ use filereduce::storage::{Storage, MemoryStorage, UploadRequest};
 #[cfg(feature = "gcs")]
 use filereduce::storage::GcsStorage;
 use filereduce::translations::TranslationRegistry;
+use filereducelib::{FileReduceCompressor, FileReduceDecompressor};
 use std::collections::HashMap;
 use serde::Serialize;
 use std::convert::Infallible;
 use std::env;
+use std::error::Error;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast};
@@ -135,6 +137,11 @@ async fn main() {
         .and(warp::get())
         .and(with_state(state.clone()))
         .and_then(events_handler);
+    let process_cloud = warp::path!("process" / "cloud" / Uuid)
+        .and(warp::post())
+        .and(warp::body::json())
+        .and(with_state(state.clone()))
+        .and_then(process_cloud_handler);
 
     let routes = health
         .or(reload)
@@ -146,6 +153,7 @@ async fn main() {
         .or(download)
         .or(status)
         .or(events)
+        .or(process_cloud)
         .with(warp::cors().allow_any_origin())
         .with(warp::log("filereduce::api"));
 
@@ -202,6 +210,156 @@ async fn events_handler(state: AppState) -> Result<impl Reply, Rejection> {
         }
     };
     Ok(sse::reply(stream))
+}
+
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
+struct CloudProcessRequest {
+    operation: String, // "edifact", "jsonl", "fra"
+}
+
+async fn process_cloud_handler(file_id: Uuid, req: CloudProcessRequest, state: AppState) -> Result<impl Reply, Rejection> {
+    let task_id = Uuid::new_v4();
+    
+    // Crear tarea con estado Pending
+    {
+        let mut tasks = state.tasks.write().await;
+        tasks.insert(task_id, TaskStatus::Pending);
+    }
+    
+    // Emitir evento de tarea creada
+    let _ = state.broadcast_tx.send(TaskEvent {
+        task_id,
+        status: TaskStatus::Pending,
+        timestamp: chrono::Utc::now(),
+    });
+    
+    // Obtener el storage para verificar que el archivo existe
+    let storage = state.storage.clone();
+    let registry = state.registry.clone();
+    let broadcast_tx = state.broadcast_tx.clone();
+    let tasks_map = state.tasks.clone();
+    
+    // Spawn worker asíncrono
+    tokio::spawn(async move {
+        // Actualizar estado a Processing
+        {
+            let mut tasks = tasks_map.write().await;
+            tasks.insert(task_id, TaskStatus::Processing);
+        }
+        
+        // Emitir evento Processing
+        let _ = broadcast_tx.send(TaskEvent {
+            task_id,
+            status: TaskStatus::Processing,
+            timestamp: chrono::Utc::now(),
+        });
+        
+        // Procesamiento real
+        let result = process_file_cloud(file_id, &req.operation, storage, registry).await;
+        
+        match result {
+            Ok(result_file_id) => {
+                // Actualizar estado a Completed
+                {
+                    let mut tasks = tasks_map.write().await;
+                    tasks.insert(task_id, TaskStatus::Completed { file_id: result_file_id });
+                }
+                
+                // Emitir evento Completed
+                let _ = broadcast_tx.send(TaskEvent {
+                    task_id,
+                    status: TaskStatus::Completed { file_id: result_file_id },
+                    timestamp: chrono::Utc::now(),
+                });
+            }
+            Err(e) => {
+                // Actualizar estado a Failed
+                {
+                    let mut tasks = tasks_map.write().await;
+                    tasks.insert(task_id, TaskStatus::Failed { error: e.to_string() });
+                }
+                
+                // Emitir evento Failed
+                let _ = broadcast_tx.send(TaskEvent {
+                    task_id,
+                    status: TaskStatus::Failed { error: e.to_string() },
+                    timestamp: chrono::Utc::now(),
+                });
+            }
+        }
+    });
+    
+    Ok(warp::reply::json(&serde_json::json!({
+        "task_id": task_id,
+        "message": "Processing started"
+    })).into_response())
+}
+
+async fn process_file_cloud(
+    file_id: Uuid,
+    operation: &str,
+    storage: Arc<dyn Storage>,
+    registry: Arc<RwLock<TranslationRegistry>>,
+) -> Result<Uuid, Box<dyn Error + Send>> {
+    // Descargar archivo del storage
+    let bytes = storage.retrieve_bytes(file_id).await?;
+    
+    match operation {
+        "edifact" => {
+            // EDIFACT -> JSONL
+            let reader = std::io::Cursor::new(bytes.to_vec());
+            let registry = registry.read().await;
+            let mut processor = filereduce::core::EdifactProcessor::with_registry(registry.clone());
+            let result = processor.process_to_vec(reader).map_err(|e| Box::new(e) as Box<dyn Error + Send>)?;
+            
+            // Guardar resultado en storage
+            let result_file_id = Uuid::new_v4();
+            storage.store_bytes(result_file_id, bytes::Bytes::from(result)).await?;
+            
+            Ok(result_file_id)
+        }
+        "jsonl" => {
+            // JSONL -> .fra (compresión)
+            use std::io::Cursor;
+            let input = bytes.to_vec();
+            let compressed = tokio::task::spawn_blocking(move || {
+                let mut compressor = FileReduceCompressor::new();
+                let mut input_cursor = Cursor::new(input);
+                let mut output_cursor = Cursor::new(Vec::new());
+                compressor
+                    .compress(&mut input_cursor, &mut output_cursor)
+                    .map(|_| output_cursor.into_inner())
+                    .map_err(|e| Box::new(e) as Box<dyn Error + Send>)
+            }).await
+            .map_err(|e| Box::new(e) as Box<dyn Error + Send>)??;
+            
+            let result_file_id = Uuid::new_v4();
+            storage.store_bytes(result_file_id, bytes::Bytes::from(compressed)).await?;
+            
+            Ok(result_file_id)
+        }
+        "fra" => {
+            // .fra -> JSONL (descompresión)
+            use std::io::Cursor;
+            let input = bytes.to_vec();
+            let decompressed = tokio::task::spawn_blocking(move || {
+                let mut decompressor = FileReduceDecompressor::new();
+                let mut input_cursor = Cursor::new(input);
+                let mut output_cursor = Cursor::new(Vec::new());
+                decompressor
+                    .decompress(&mut input_cursor, &mut output_cursor)
+                    .map(|_| output_cursor.into_inner())
+                    .map_err(|e| Box::new(e) as Box<dyn Error + Send>)
+            }).await
+            .map_err(|e| Box::new(e) as Box<dyn Error + Send>)??;
+            
+            let result_file_id = Uuid::new_v4();
+            storage.store_bytes(result_file_id, bytes::Bytes::from(decompressed)).await?;
+            
+            Ok(result_file_id)
+        }
+        _ => Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unsupported operation")) as Box<dyn Error + Send>),
+    }
 }
 
 async fn reload_translations_handler(state: AppState) -> Result<impl Reply, Rejection> {

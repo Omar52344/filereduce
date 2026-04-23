@@ -24,6 +24,7 @@ interface ProcessResult {
 
 // Cloud processing types
 interface UploadRequest {
+  file_id: string;
   file_name: string;
   file_size: number;
 }
@@ -31,6 +32,14 @@ interface UploadRequest {
 interface UploadResponse {
   upload_url: string;
   file_id: string;
+}
+
+interface CloudProcessRequest {
+  operation: string;
+}
+
+interface CloudProcessResponse {
+  task_id: string;
 }
 
 interface ProcessingTask {

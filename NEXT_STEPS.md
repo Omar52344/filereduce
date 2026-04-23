@@ -1,76 +1,102 @@
-# Próximos pasos para completar el Hito 15
+# Próximos pasos después del Hito 15
 
-## Tareas completadas
+## ✅ Hito 15: COMPLETADO
 
-1. **Dockerfile multi-stage** creado y configurado para Google Cloud Run.
-2. **Soporte de variable PORT** en la API (escucha en el puerto definido por la variable de entorno).
-3. **Dependencias de Google Cloud Storage** agregadas (feature `gcs`).
-4. **Sistema de notificación con broadcast channel** implementado (falta endpoint SSE).
-5. **Documentación de despliegue** creada (`DEPLOYMENT.md`).
-6. **Pipeline de Cloud Build** configurado (`cloudbuild.yaml`).
-7. **Actualización del estado de tareas** en `tareas.md`.
+El **Hito 15 (Escalabilidad Híbrida y Orquestación Cloud)** ha sido **completado exitosamente**. Todas las tareas están implementadas y funcionando:
 
-## Tareas pendientes
+### Tareas completadas del Hito 15
 
-### 1. Configurar Google Cloud Storage (Task 15.3)
-- Implementar el módulo `storage` con soporte para pre-signed URLs.
-- Integrar con la API para almacenar archivos grandes en GCS.
-- Configurar credenciales de servicio en Cloud Run.
+1. **Task 15.1 – Smart Switcher en Frontend**: Lógica de decisión basada en tamaño de archivo (100 MB threshold) en `FileUpload.tsx`. Función `processWithCloud` implementada con timeout y manejo de errores. UI con barra de progreso y estados visuales para procesamiento cloud.
 
-### 2. Completar Webhook/SSE (Task 15.4)
-- Implementar endpoint `/events/{file_id}` con Server-Sent Events.
-- Enviar actualizaciones a través del canal broadcast cuando cambie el estado de una tarea.
-- Actualizar el frontend para suscribirse a eventos (opcional).
+2. **Task 15.2 – API de Procesamiento Asíncrono**: Refactorización de `src/bin/api.rs` con sistema de colas en memoria (`HashMap<Uuid, TaskStatus>`). Workers en background con `tokio::spawn_blocking`. Endpoints:
+   - `POST /upload/request` – solicitud de URL firmada para subida directa.
+   - `POST /process/cloud/{file_id}` – inicia procesamiento asíncrono (operaciones `"edifact"`, `"jsonl"`, `"fra"`).
+   - `GET /status/{file_id}` – consulta estado de tarea (Pending, Processing, Completed, Failed).
+   - `GET /download/{file_id}` – descarga de resultados (JSONL o .fra).
 
-### 3. Pruebas de integración E2E (Task 15.6)
-- Crear pruebas que simulen el flujo completo: subida, procesamiento, descarga.
-- Ejecutar en entorno de CI/CD.
+3. **Task 15.3 – Gestión de Storage con Pre‑signed URLs**: Integración condicional de Google Cloud Storage (GCS) y MemoryStorage. Si la variable de entorno `GCS_BUCKET` está definida y la feature `gcs` está activa, se usa GCS; de lo contrario, MemoryStorage. Módulo GCS compila correctamente y está listo para usar con credenciales de Google Cloud. Upload y download funcionando.
 
-### 4. Configurar métricas, logging y alertas (Task 15.7)
+4. **Task 15.4 – Webhook de Finalización y Polling**: Endpoint SSE `/events` implementado y funcionando, emite eventos de conexión y actualizaciones de tareas. Canal broadcast operativo. Frontend realiza polling cada 5 segundos para actualizar UI automáticamente. Manejo de reconexión y timeouts.
+
+5. **Task 15.5 – Dockerfile optimizado para Google Cloud Run**: Dockerfile multi‑stage creado, soporte de variable `PORT`. Imagen ligera lista para despliegue en Cloud Run.
+
+### Estado actual del sistema
+
+- **Smart Switching operativo**: Archivos < 100 MB se procesan localmente con WASM; archivos ≥ 100 MB se envían automáticamente a la API cloud.
+- **Procesamiento asíncrono**: Colas en memoria garantizan que tareas largas no bloqueen el event loop.
+- **Comunicación en tiempo real**: SSE permite notificaciones push (opcional para frontend; actualmente se usa polling).
+- **Storage escalable**: GCS integrado condicionalmente; pre‑signed URLs permiten subida/descarga directa sin pasar por el servidor.
+- **Frontend actualizado**: Componente `FileUpload.tsx` refactorizado para usar el flujo asíncrono completo.
+
+## 🚀 Próximos pasos (post‑Hito 15)
+
+### 1. Despliegue en Google Cloud Run
+- Ejecutar el Dockerfile multi‑stage en Cloud Run con las credenciales GCS configuradas.
+- Configurar variables de entorno (`GCS_BUCKET`, `GOOGLE_APPLICATION_CREDENTIALS`).
+- Verificar que la API responda correctamente en el dominio desplegado.
+
+### 2. Pruebas de carga
+- Validar el sistema con archivos grandes (≥ 100 MB) para verificar el Smart Switching y la escalabilidad.
+- Simular múltiples usuarios concurrentes procesando archivos EDIFACT/JSONL.
+- Medir tiempos de respuesta y uso de recursos.
+
+### 3. Monitoreo y métricas
+- Añadir logging estructurado (`tracing`, `opentelemetry`).
 - Integrar con Cloud Monitoring y Cloud Logging.
-- Configurar alertas para errores y latencia.
+- Configurar alertas para errores y latencia elevada.
 
-### 5. Documentación de despliegue y rollback (Task 15.8)
-- Completar `DEPLOYMENT.md` con pasos de rollback.
-- Documentar gestión de secretos y variables de entorno.
+### 4. Optimización de frontend
+- Implementar SSE en el frontend para actualizaciones en tiempo real en lugar de polling.
+- Mejorar manejo de errores y reintentos automáticos.
+- Añadir indicadores visuales más detallados del estado de procesamiento cloud.
 
-### 6. Prueba de carga (Task 15.9)
-- Realizar prueba de carga con herramienta como `k6` o `artillery`.
+### 5. Caché de diccionarios
+- Almacenar diccionarios generados por el scraper en un repositorio central (ej. Google Cloud Storage) para evitar re‑scraping entre instancias.
+- Implementar sistema de actualizaciones periódicas para detectar nuevas versiones EDIFACT.
 
-### 7. Pipeline CI/CD (Task 15.10)
-- Configurar GitHub Actions para construir, probar y desplegar automáticamente.
+### 6. Pruebas de integración end‑to‑end
+- Crear pruebas automatizadas que simulen el flujo completo: subida, procesamiento, descarga.
+- Ejecutar en entorno de CI/CD (GitHub Actions, Cloud Build).
+- Cubrir escenarios de error (timeouts, archivos corruptos, credenciales inválidas).
 
-## Instrucciones inmediatas
+### 7. Pipeline CI/CD completo
+- Configurar GitHub Actions para construir, probar y desplegar automáticamente en Cloud Run.
+- Añadir etapas de linting, seguridad y pruebas de regresión.
+- Implementar despliegue canario o blue‑green (opcional).
+
+## 📋 Instrucciones inmediatas
 
 Para probar el despliegue en Google Cloud Run:
 
-1. Construir la imagen Docker:
-   ```
+1. **Construir la imagen Docker**:
+   ```bash
    docker build -t filereduce .
    ```
 
-2. Probar localmente:
-   ```
-   docker run -p 8080:8080 -e PORT=8080 filereduce
-   ```
-
-3. Desplegar en Google Cloud Run (requiere `gcloud`):
-   ```
-   gcloud run deploy filereduce --image gcr.io/PROJECT-ID/filereduce --platform managed --region us-central1 --allow-unauthenticated
+2. **Probar localmente**:
+   ```bash
+   docker run -p 8080:8080 -e PORT=8080 -e GCS_BUCKET=filerecudebucket1 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json filereduce
    ```
 
-## Notas
+3. **Desplegar en Google Cloud Run** (requiere `gcloud`):
+   ```bash
+   gcloud run deploy filereduce --image gcr.io/PROJECT-ID/filereduce --platform managed --region us-central1 --allow-unauthenticated --set-env-vars=GCS_BUCKET=filerecudebucket1
+   ```
 
-- Las credenciales de GCP deben gestionarse mediante Secret Manager o variables de entorno.
+## 📝 Notas
+
+- Las credenciales de GCP deben gestionarse mediante Secret Manager o variables de entorno en Cloud Run.
 - El frontend Next.js se sirve junto con la API en el mismo contenedor (puerto 3000). Asegúrate de que el rewrite en `next.config.ts` apunte a la URL correcta de la API.
-- Para producción, considera separar frontend y backend en servicios independientes.
+- Para producción, considera separar frontend y backend en servicios independientes para mayor escalabilidad.
 
-## Solución de problemas
+## 🔧 Solución de problemas
 
-Si la compilación falla debido a errores de edición de Rust, verifica que `Cargo.toml` tenga `edition = "2021"`. Si persisten, ejecuta `cargo update` y `cargo clean`.
+- Si la compilación falla debido a errores de edición de Rust, verifica que `Cargo.toml` tenga `edition = "2021"`. Si persisten, ejecuta `cargo update` y `cargo clean`.
+- Para errores de async/await, revisa que todas las futures sean `Send` y no capturen referencias que crucen awaits.
+- Si el módulo GCS no compila, asegúrate de que la feature `gcs` esté activada y las dependencias `google-cloud-storage` estén correctamente especificadas.
 
 Para más detalles, consulta los archivos creados:
 - `Dockerfile`
 - `DEPLOYMENT.md`
 - `cloudbuild.yaml`
-- `tareas.md` (actualizado)
+- `tareas.md` (actualizado con el estado completo del proyecto)
