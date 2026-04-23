@@ -151,7 +151,7 @@ export default function FileUpload() {
                 jsonParseErrors++;
                 // Log first few errors for debugging
                 if (jsonParseErrors <= 3) {
-                  console.warn(`[parseJsonlPartial] JSON parse error on line ${totalLines}:`, e.message, 'Text preview:', lineText.substring(0, 100));
+                  console.debug(`[parseJsonlPartial] JSON parse error on line ${totalLines}:`, e.message, 'Text preview:', lineText.substring(0, 100));
                 }
               }
             }
@@ -177,7 +177,7 @@ export default function FileUpload() {
           } catch (e: any) {
             jsonParseErrors++;
             if (jsonParseErrors <= 3) {
-              console.warn(`[parseJsonlPartial] JSON parse error on last line:`, e.message, 'Text preview:', lineText.substring(0, 100));
+              console.debug(`[parseJsonlPartial] JSON parse error on last line:`, e.message, 'Text preview:', lineText.substring(0, 100));
             }
           }
         }
@@ -200,7 +200,7 @@ export default function FileUpload() {
           console.log(`[parseJsonlPartial] Parsed as single JSON document (no newlines detected)`);
         } catch (e: any) {
           jsonParseErrors++;
-          console.warn(`[parseJsonlPartial] Failed to parse as single JSON:`, e.message, 'Preview:', entireText.substring(0, 200));
+          console.debug(`[parseJsonlPartial] Failed to parse as single JSON:`, e.message, 'Preview:', entireText.substring(0, 200));
         }
       }
     }
@@ -314,7 +314,7 @@ export default function FileUpload() {
     };
   };
 
-  const processWithCloud = async (file: File, fileType: FileType): Promise<ProcessResult> => {
+  const processWithCloud = async (file: File, fileType: FileType, onProgress?: (pct: number, status: string) => void): Promise<ProcessResult> => {
     const CLOUD_API_BASE = 'http://localhost:8080';
     let endpoint: string;
     let contentType: string;
@@ -336,10 +336,12 @@ export default function FileUpload() {
       throw new Error('Unsupported file type for cloud processing');
     }
     
+    onProgress?.(5, 'Reading file...');
     const arrayBuffer = await file.arrayBuffer();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5 minutes timeout for large files
     
+    onProgress?.(15, 'Sending file to cloud...');
     let response: Response;
     try {
       response = await fetch(`${CLOUD_API_BASE}${endpoint}`, {
@@ -365,6 +367,7 @@ export default function FileUpload() {
       throw new Error(`Cloud processing failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
+    onProgress?.(50, 'Processing on server...');
     // The /process/edifact endpoint returns JSON with task status and download URL
     const processResult = await response.json();
     
@@ -378,6 +381,7 @@ export default function FileUpload() {
       throw new Error('Cloud processing: missing file_id in response');
     }
     
+    onProgress?.(65, 'Downloading processed data...');
     // Fetch the actual processed data
     const dataResponse = await fetch(`${CLOUD_API_BASE}/data/${fileId}`);
     if (!dataResponse.ok) {
@@ -387,6 +391,7 @@ export default function FileUpload() {
     const resultBlob = await dataResponse.blob();
     const processedSize = resultBlob.size;
     
+    onProgress?.(85, 'Parsing results...');
     let processedData: any[] | undefined;
     let processedBlob: Blob | undefined;
     
@@ -400,6 +405,7 @@ export default function FileUpload() {
       processedBlob = resultBlob;
     }
     
+    onProgress?.(95, 'Finalizing...');
     return {
       originalSize: file.size,
       processedSize,
@@ -478,7 +484,10 @@ export default function FileUpload() {
         // Cloud processing
         setCloudStatus('Uploading file to cloud...');
         setCloudProgress(10);
-        processedResult = await processWithCloud(file, fileType);
+        processedResult = await processWithCloud(file, fileType, (pct, status) => {
+          setCloudProgress(pct);
+          setCloudStatus(status);
+        });
         setCloudStatus('Processing complete');
         setCloudProgress(100);
       }
@@ -540,8 +549,14 @@ export default function FileUpload() {
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    // Keep blob URL alive long enough for browser to start the download
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 3000);
   };
 
   const handleDownloadJSONL = () => {
@@ -564,18 +579,51 @@ export default function FileUpload() {
   };
 
   const handleDownloadCSV = () => {
-    if (!result?.processedData || result.processedData.length === 0) return;
-    // Simple CSV conversion (flatten first document)
-    const headers = Object.keys(result.processedData[0]);
-    const csvRows = [
-      headers.join(','),
-      ...result.processedData.map((row: any) =>
-        headers.map(header => `"${(row[header] || '').toString().replace(/"/g, '""')}"`).join(',')
-      ),
-    ];
-    const csv = csvRows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    downloadFile(blob, `${result.fileName || 'output'}.csv`);
+    if (!result) return;
+
+    const generateAndDownloadCSV = (data: any[], fileName: string) => {
+      try {
+        const headers = Object.keys(data[0]);
+        const csvRows = [
+          headers.join(','),
+          ...data.map((row: any) =>
+            headers.map(header => `"${(row[header] || '').toString().replace(/"/g, '""')}"`).join(',')
+          ),
+        ];
+        const csv = csvRows.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        downloadFile(blob, `${fileName}.csv`);
+      } catch (err) {
+        console.error('Error generating CSV:', err);
+        alert('Error al generar el CSV. Revisa la consola para más detalles.');
+      }
+    };
+
+    // If parsed data is available, use it directly
+    if (result.processedData && result.processedData.length > 0) {
+      generateAndDownloadCSV(result.processedData, result.fileName || 'output');
+      return;
+    }
+
+    // Fallback: if processedBlob exists but processedData was empty (e.g. cloud flow
+    // where the blob wasn't parsed as JSONL), try to parse it on-the-fly
+    if (result.processedBlob) {
+      result.processedBlob.text().then(text => {
+        const lines = text.split('\n').filter((l: string) => l.trim());
+        const parsed = lines.map((l: string) => {
+          try { return JSON.parse(l); } catch { return null; }
+        }).filter((d: any) => d !== null);
+
+        if (parsed.length > 0) {
+          generateAndDownloadCSV(parsed, result.fileName || 'output');
+        } else {
+          alert('No se pudieron extraer datos tabulares del archivo procesado.');
+        }
+      }).catch(err => {
+        console.error('Error reading blob for CSV:', err);
+        alert('Error al leer el archivo procesado para generar CSV.');
+      });
+    }
   };
 
   return (
@@ -741,7 +789,7 @@ export default function FileUpload() {
           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
              <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-4">{t('home.results.downloadResults')}</h4>
             <div className="flex flex-wrap gap-3">
-              {result.processedData && (
+              {(result.processedData || (result.processedBlob && result.contentType?.includes('application/jsonl'))) && (
                 <>
                   <button
                     onClick={handleDownloadJSONL}

@@ -136,6 +136,7 @@ export interface Translations {
     savings: string;
     spaceSaved: string;
     reduction: string;
+    expansion: string;
     cloudCost: string;
     cloudCostProjected: string;
     costSaving: string;
